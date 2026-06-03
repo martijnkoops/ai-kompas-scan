@@ -1,0 +1,3578 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Kompas Scan - AI-Geletterdheid</title>
+  
+  <!-- Chart.js via CDN voor de resultatenvisualisatie -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Premium Lettertypen (Outfit & Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* DESIGN SYSTEM & PROFESSIONAL GAME SCAN AESTHETIC */
+    :root {
+      --bg-space: #15396f;
+      --bg-panel: rgba(20, 54, 103, 0.9);
+      --bg-card: rgba(34, 86, 138, 0.78);
+      --bg-card-hover: rgba(50, 113, 171, 0.9);
+      --border-glass: rgba(255, 255, 255, 0.18);
+      --border-glass-hover: rgba(255, 255, 255, 0.34);
+      
+      /* Competentiekleuren */
+      --accent-basis: #00fa9a;      /* Neon Mint (Basis / Ethiek) */
+      --accent-didactiek: #00e5ff;  /* Neon Cyan (Didactiek / Techniek) */
+      --accent-visie: #b39ddb;      /* Neon Lavendel (Visie / Beleid) */
+      
+      /* Statuskleuren */
+      --accent-warning: #ffb300;    /* Goudgeel */
+      --accent-danger: #ff4a5a;     /* Neon Rood */
+      --text-main: #ffffff;         /* Pure wit voor betere leesbaarheid */
+      --text-muted: #e4f1ff;        /* Frisse, lichte secundaire tekst */
+      
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Reset & Basis Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      background-image:
+        linear-gradient(135deg, #dffcf4 0%, #d8f3ff 20%, #2b69a6 55%, #18396f 100%),
+        linear-gradient(0deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    /* Container & Layout */
+    .app-container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header & Dashboard Stats */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      background: rgba(20, 54, 103, 0.82);
+      box-shadow: 0 10px 26px rgba(8, 31, 67, 0.18);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent-didactiek), var(--accent-visie));
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #000;
+      font-size: 1.2rem;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+
+    .logo-title {
+      font-size: 1.5rem;
+      background: linear-gradient(to right, #ffffff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Game Meters Top Bar */
+    .game-status-bar {
+      display: flex;
+      gap: 24px;
+    }
+
+    .status-meter {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .meter-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* Screen Wrapper & Glass Effect */
+    .screen {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .hidden {
+      display: none !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .glass-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 18px 45px 0 rgba(8, 31, 67, 0.34);
+    }
+
+    /* DYNAMIC BUTTONS */
+    .btn {
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      color: var(--text-main);
+      border: 1px solid var(--border-glass);
+      padding: 14px 28px;
+      font-family: var(--font-title);
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+      text-decoration: none;
+      font-size: 1rem;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: var(--border-glass-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-didactiek), var(--accent-visie));
+      color: #070913;
+      border: none;
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 229, 255, 0.5);
+    }
+
+    /* WELCOME SCREEN */
+    .welcome-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .welcome-title {
+      font-size: 3rem;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, #ffffff, var(--accent-didactiek));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .welcome-desc {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .scan-note {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 16px;
+      color: #ffffff;
+      line-height: 1.55;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .competence-intro-box {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .competence-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border-left: 4px solid var(--accent-color);
+      padding: 16px;
+      border-radius: 0 12px 12px 0;
+      border: 1px solid var(--border-glass);
+    }
+
+    .competence-section-label {
+      color: #ffffff;
+      font-family: var(--font-title);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .competence-pill h3 {
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .competence-pill p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* LEVEL RULES EXPLANATION */
+    .rules-card {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .rules-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      display: inline-block;
+      padding: 16px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-glass);
+    }
+
+    .rules-title {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      color: var(--accent-color);
+    }
+
+    .rules-text {
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      font-size: 1.1rem;
+    }
+
+    /* LEVEL 1: DE RISICO-SCANNER */
+    .scanner-workspace {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .dropzones-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.01);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 140px;
+    }
+
+    .dropzone.dragover {
+      background: rgba(255, 255, 255, 0.05);
+      border-style: solid;
+      transform: scale(1.02);
+    }
+
+    .dropzone-safe.dragover, .dropzone-safe.active-drop {
+      border-color: var(--accent-basis);
+      box-shadow: 0 0 15px rgba(0, 250, 154, 0.2);
+      background: rgba(0, 250, 154, 0.05);
+    }
+
+    .dropzone-adapt.dragover, .dropzone-adapt.active-drop {
+      border-color: var(--accent-warning);
+      box-shadow: 0 0 15px rgba(255, 179, 0, 0.2);
+      background: rgba(255, 179, 0, 0.05);
+    }
+
+    .dropzone-unsafe.dragover, .dropzone-unsafe.active-drop {
+      border-color: var(--accent-danger);
+      box-shadow: 0 0 15px rgba(255, 74, 90, 0.2);
+      background: rgba(255, 74, 90, 0.05);
+    }
+
+    .dropzone h3 {
+      font-size: 1.1rem;
+    }
+
+    .dropzone p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .scanner-core {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background: rgba(21, 57, 111, 0.32);
+      border-radius: 16px;
+      border: 1px solid var(--border-glass);
+      min-height: 280px;
+      position: relative;
+    }
+
+    .case-card {
+      background: linear-gradient(135deg, #245a92, #163e73);
+      border: 1px solid var(--border-glass-hover);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      cursor: grab;
+      position: relative;
+      user-select: none;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .case-card:active {
+      cursor: grabbing;
+      transform: scale(0.98);
+    }
+
+    .case-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .case-badge {
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      color: var(--accent-didactiek);
+    }
+
+    .case-title {
+      font-size: 1.3rem;
+      color: #ffffff;
+    }
+
+    .case-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #ffffff !important; /* Pure wit voor betere leesbaarheid */
+    }
+
+    /* Risk Factor Popup Modal (Multi-Select) */
+    .overlay-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(12, 39, 76, 0.74);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition-smooth);
+    }
+
+    .overlay-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1d5791, #173a70);
+      border: 1px solid var(--border-glass-hover);
+      width: 90%;
+      max-width: 640px;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      text-align: center;
+      transform: scale(0.9);
+      transition: var(--transition-smooth);
+    }
+
+    .overlay-modal.active .modal-content {
+      transform: scale(1);
+    }
+
+    .scan-feedback-modal {
+      max-width: 720px;
+      text-align: left;
+    }
+
+    .scan-feedback-modal .modal-title {
+      text-align: left;
+    }
+
+    .modal-title {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+      color: var(--accent-warning);
+    }
+
+    .modal-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .risk-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    /* Checkbox styled chip buttons */
+    .risk-checkbox-label {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 14px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.85rem;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      user-select: none;
+    }
+
+    .risk-checkbox-label:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .risk-checkbox-label input {
+      display: none;
+    }
+
+    .custom-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-glass-hover);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: transparent;
+      transition: var(--transition-smooth);
+      flex-shrink: 0;
+    }
+
+    .risk-checkbox-label.selected {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: var(--accent-didactiek);
+    }
+
+    .risk-checkbox-label.selected .custom-checkbox {
+      border-color: var(--accent-didactiek);
+      background-color: var(--accent-didactiek);
+      color: #070913;
+    }
+
+    /* Microfeedback Panel */
+    .feedback-panel {
+      margin-top: 20px;
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 4px solid #fff;
+      background: rgba(255,255,255,0.02);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .feedback-status {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .feedback-body {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #ffffff; /* Pure wit voor betere leesbaarheid */
+    }
+
+    .feedback-body ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* LEVEL 2: PROMPT-TRAIL AUDIT */
+    .audit-chat-container {
+      background: rgba(21, 57, 111, 0.32);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .chat-bubble {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .chat-bubble-user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .chat-bubble-ai {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .chat-sender {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .chat-text {
+      padding: 12px 18px;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .chat-bubble-user .chat-text {
+      background-color: var(--bg-card-hover);
+      border-bottom-right-radius: 2px;
+      color: #ffffff;
+    }
+
+    .chat-bubble-ai .chat-text {
+      background-color: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      border-bottom-left-radius: 2px;
+      color: #ffffff;
+      white-space: pre-line;
+    }
+
+    .strategy-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .strategy-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 20px;
+      color: #ffffff;
+      cursor: pointer;
+      text-align: center;
+      transition: var(--transition-smooth);
+    }
+
+    .strategy-btn:hover:not(:disabled) {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-didactiek);
+      transform: translateY(-2px);
+    }
+
+    .strategy-btn.selected {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: var(--accent-didactiek);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+    }
+
+    .strategy-title {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+    }
+
+    .strategy-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* LEVEL 3: DE AI-WERKPLAATS */
+    .workshop-objective {
+      background: rgba(0, 229, 255, 0.04);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 28px;
+    }
+
+    .objective-tag {
+      font-family: var(--font-title);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-didactiek);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .objective-text {
+      font-size: 1.1rem;
+      line-height: 1.5;
+      color: #ffffff;
+    }
+
+    .workshop-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .column-title {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent-didactiek);
+    }
+
+    .card-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .selectable-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      user-select: none;
+      position: relative;
+    }
+
+    .selectable-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(0, 229, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .selectable-card.selected {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: var(--accent-didactiek);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+    }
+
+    .selectable-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      color: var(--accent-didactiek);
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .selectable-card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .selectable-card-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .recipe-preview-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-glass);
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+    }
+
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .recipe-slot {
+      background: rgba(21, 57, 111, 0.22);
+      border: 1px dashed var(--border-glass);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .recipe-slot.active {
+      border-style: solid;
+      border-color: var(--accent-didactiek);
+      color: #ffffff;
+      background: rgba(0, 229, 255, 0.03);
+    }
+
+    /* LEVEL 4: DE AI-ARCHITECT */
+    .architect-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 30px;
+    }
+
+    .policies-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .policy-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 20px;
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+
+    .policy-card:hover {
+      border-color: var(--border-glass-hover);
+    }
+
+    .policy-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .policy-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .policy-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .token-slot-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .token-slot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px dashed rgba(179, 157, 219, 0.5);
+      background: rgba(21, 57, 111, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      color: var(--accent-visie);
+      font-weight: 800;
+    }
+
+    .token-slot.filled {
+      border-style: solid;
+      border-color: var(--accent-visie);
+      background: rgba(179, 157, 219, 0.2);
+      box-shadow: 0 0 10px rgba(179, 157, 219, 0.4);
+      color: #070913;
+    }
+
+    .architect-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .energy-bank {
+      background: rgba(179, 157, 219, 0.05);
+      border: 1px solid rgba(179, 157, 219, 0.15);
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+    }
+
+    .energy-bank-title {
+      font-family: var(--font-title);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-visie);
+      margin-bottom: 12px;
+    }
+
+    .coins-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      min-height: 48px;
+    }
+
+    .coin {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #e1bee7 0%, var(--accent-visie) 100%);
+      box-shadow: 0 0 15px rgba(179, 157, 219, 0.6), inset 0 2px 4px rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #070913;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      font-size: 1.1rem;
+      user-select: none;
+    }
+
+    .coin:hover {
+      transform: scale(1.08);
+    }
+
+    .coin.spent {
+      opacity: 0.2;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+    }
+
+    .live-dash {
+      background: rgba(21, 57, 111, 0.32);
+      border: 1px solid var(--border-glass);
+      padding: 24px;
+      border-radius: 16px;
+    }
+
+    .dash-title {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 8px;
+      color: #ffffff;
+    }
+
+    .dash-meter-item {
+      margin-bottom: 16px;
+    }
+
+    .dash-meter-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .dash-meter-track {
+      background: rgba(255,255,255,0.05);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .dash-meter-fill {
+      height: 100%;
+      width: 50%; 
+      background: linear-gradient(to right, var(--accent-visie), var(--accent-didactiek));
+      border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* LEVEL UP SCREEN */
+    .level-up-box {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      animation: pulseGlow 2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from { box-shadow: 0 12px 40px 0 rgba(0, 229, 255, 0.15); }
+      to { box-shadow: 0 12px 40px 0 rgba(179, 157, 219, 0.3); }
+    }
+
+    .level-up-tag {
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--accent-didactiek);
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      margin-bottom: 8px;
+    }
+
+    .level-up-title {
+      font-size: 2.8rem;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent-visie) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .level-up-desc {
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-size: 1.05rem;
+      margin-bottom: 30px;
+    }
+
+    /* RESULTS SCREEN */
+    .results-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: flex-start;
+    }
+
+    .chart-container {
+      background: rgba(0,0,0,0.15);
+      border: 1px solid var(--border-glass);
+      padding: 24px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+    }
+
+    .assessment-feedback {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .profile-title-box {
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 16px;
+    }
+
+    .profile-badge {
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent-didactiek);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+      display: inline-block;
+    }
+
+    .profile-name {
+      font-size: 2rem;
+      font-weight: 800;
+    }
+
+    .profile-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #ffffff;
+    }
+
+    .improvement-box {
+      background: rgba(255, 179, 0, 0.04);
+      border: 1px solid rgba(255, 179, 0, 0.15);
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .improvement-title {
+      font-weight: 700;
+      color: var(--accent-warning);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .growth-advice {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: #ffffff;
+    }
+
+    .growth-advice div {
+      padding-top: 2px;
+    }
+
+    .growth-advice strong {
+      color: var(--accent-warning);
+    }
+
+    .result-explainer {
+      margin-top: 24px;
+      padding: 16px;
+      border: 1px solid rgba(0, 229, 255, 0.18);
+      border-left: 4px solid var(--accent-didactiek);
+      border-radius: 10px;
+      background: rgba(0, 229, 255, 0.05);
+      color: #ffffff;
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .result-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-glass);
+    }
+
+    .section-heading-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-heading-row h3 {
+      font-size: 1.35rem;
+      margin-top: 4px;
+    }
+
+    .section-note {
+      max-width: 560px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .evidence-tile {
+      min-height: 116px;
+      padding: 14px;
+      border: 1px solid var(--border-glass);
+      border-left: 4px solid var(--accent-didactiek);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .evidence-label {
+      font-family: var(--font-title);
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .evidence-value {
+      font-size: 1.6rem;
+      font-family: var(--font-title);
+      font-weight: 800;
+    }
+
+    .evidence-detail {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .reflection-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .reflection-item {
+      padding: 14px;
+      border: 1px solid rgba(255, 179, 0, 0.18);
+      border-left: 4px solid var(--accent-warning);
+      border-radius: 10px;
+      background: rgba(255, 179, 0, 0.05);
+      line-height: 1.5;
+      font-size: 0.9rem;
+    }
+
+    .reflection-item strong {
+      color: var(--accent-warning);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .criteria-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 18px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .status-shown {
+      color: #001c12;
+      background: var(--accent-basis);
+      border-color: rgba(0, 250, 154, 0.7);
+    }
+
+    .status-partial {
+      color: #1c1300;
+      background: var(--accent-warning);
+      border-color: rgba(255, 179, 0, 0.7);
+    }
+
+    .status-not-shown {
+      color: #ffffff;
+      background: rgba(255, 74, 90, 0.18);
+      border-color: rgba(255, 74, 90, 0.35);
+    }
+
+    .status-not-tested {
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-glass);
+    }
+
+    .criteria-level-card {
+      margin-top: 14px;
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      overflow: hidden;
+    }
+
+    .criteria-level-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .criteria-level-header h4 {
+      font-size: 1.15rem;
+      margin-bottom: 4px;
+    }
+
+    .criteria-level-header p {
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .criteria-level-score {
+      text-align: right;
+      min-width: 150px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .criteria-level-score strong {
+      display: block;
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-family: var(--font-title);
+    }
+
+    .dimension-group {
+      padding: 14px 16px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dimension-group:last-child {
+      border-bottom: none;
+    }
+
+    .dimension-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-title);
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    .dimension-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-didactiek);
+      flex: 0 0 auto;
+    }
+
+    .criteria-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .criterion-row {
+      display: grid;
+      grid-template-columns: minmax(112px, auto) 1fr;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+      line-height: 1.45;
+      font-size: 0.87rem;
+    }
+
+    .criterion-text {
+      color: #ffffff;
+    }
+
+    .criterion-evidence {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      margin-top: 4px;
+    }
+
+    /* SUBMIT RESULTS FORM */
+    .submit-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-glass);
+      padding: 24px;
+      border-radius: 16px;
+      margin-top: 24px;
+    }
+
+    .submit-form {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .input-field {
+      flex-grow: 1;
+      background: rgba(21, 57, 111, 0.35);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #ffffff;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: var(--transition-smooth);
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent-didactiek);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 24px 0;
+      margin-top: auto;
+      border-top: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* UTILITIES */
+    .pulse-glow-btn {
+      position: relative;
+    }
+
+    .pulse-glow-btn::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border-radius: 14px;
+      border: 2px solid var(--accent-didactiek);
+      opacity: 0;
+      animation: pulseBtn 1.5s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseBtn {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.15); opacity: 0; }
+    }
+
+    @media (max-width: 900px) {
+      .welcome-grid, .results-layout, .architect-layout {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      .evidence-grid,
+      .reflection-list {
+        grid-template-columns: 1fr;
+      }
+      .section-heading-row,
+      .criteria-level-header {
+        flex-direction: column;
+      }
+      .criteria-level-score {
+        text-align: left;
+      }
+      .criterion-row {
+        grid-template-columns: 1fr;
+      }
+      .dropzones-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .workshop-columns {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .recipe-grid {
+        grid-template-columns: 1fr;
+      }
+      .strategy-selection-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .game-status-bar {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- TOP NAVIGATION & GAME DATA BAR -->
+    <header>
+      <div class="logo-container">
+        <div class="logo-badge">AI</div>
+        <h1 class="logo-title">AI-Kompas Scan</h1>
+      </div>
+      
+      <div class="game-status-bar hidden" id="status-bar">
+        <div class="status-meter">
+          <span class="meter-dot" style="color: var(--accent-basis); background: var(--accent-basis);"></span>
+          <span>Basis & Ethiek: <strong id="score-basis">0</strong></span>
+        </div>
+        <div class="status-meter">
+          <span class="meter-dot" style="color: var(--accent-didactiek); background: var(--accent-didactiek);"></span>
+          <span>Toepassing & Techniek: <strong id="score-didactiek">0</strong></span>
+        </div>
+        <div class="status-meter">
+          <span class="meter-dot" style="color: var(--accent-visie); background: var(--accent-visie);"></span>
+          <span>Visie & Beleid: <strong id="score-visie">0</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SCREEN 1: WELCOME INTRO -->
+    <div class="screen" id="screen-welcome">
+      <div class="glass-panel welcome-grid">
+        <div>
+          <h2 class="welcome-title">Ontdek je AI-Kompas</h2>
+          <p class="welcome-desc">
+            Deze scan helpt je bepalen op welk niveau je AI op dit moment beheerst. Je doorloopt korte, realistische werksituaties en krijgt na afloop een persoonlijk advies.
+            <br><br>
+            De score is geen oordeel: niet iedereen hoeft op niveau 3 te werken. Welk niveau passend is, hangt af van je rol, verantwoordelijkheid en hoeveel richting je aan AI-gebruik moet geven.
+          </p>
+          <div class="scan-note">
+            De scan kijkt naar drie competentiegebieden: veilig en ethisch handelen, doelgericht toepassen en meedenken over afspraken of beleid.
+          </div>
+          <button class="btn btn-primary pulse-glow-btn" onclick="goToRules(1)">
+            Start de scan
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </div>
+        
+        <div class="competence-intro-box">
+          <div class="competence-section-label">Adviesniveaus na afloop</div>
+          <div class="competence-pill" style="--accent-color: var(--accent-basis);">
+            <h3>Niveau 1: Veilig herkennen</h3>
+            <p>Je herkent basale risico's en weet wanneer je voorzichtig moet zijn met AI-output of data.</p>
+          </div>
+          <div class="competence-pill" style="--accent-color: var(--accent-didactiek);">
+            <h3>Niveau 2: Doelgericht toepassen</h3>
+            <p>Je gebruikt AI bewust in je werkproces en controleert kwaliteit, bronnen en bruikbaarheid.</p>
+          </div>
+          <div class="competence-pill" style="--accent-color: var(--accent-visie);">
+            <h3>Niveau 3: Richting geven</h3>
+            <p>Je helpt anderen met keuzes, afspraken, borging en verantwoord AI-gebruik in het team.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 1.5: LEVEL RULES TRANSITION -->
+    <div class="screen hidden" id="screen-rules">
+      <div class="glass-panel rules-card">
+        <div class="rules-icon" id="rules-icon-box">🧠</div>
+        <h2 class="rules-title" id="rules-title-text">Ronde 1: De Risico-Scanner</h2>
+        <p class="rules-text" id="rules-desc-text">
+          Rules description text...
+        </p>
+        <button class="btn btn-primary" id="btn-start-level" onclick="startCurrentLevel()">
+          Start ronde
+        </button>
+      </div>
+    </div>
+
+    <!-- LEVEL 1: DE RISICO-SCANNER -->
+    <div class="screen hidden" id="screen-l1">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 24px; color: var(--accent-basis);">Ronde 1: De Risico-Scanner</h2>
+        
+        <div class="scanner-workspace">
+          <!-- Top zones -->
+          <div class="dropzones-grid">
+            <div class="dropzone dropzone-safe" id="zone-safe" ondragover="allowDrag(event)" ondragleave="clearDrag(event)" ondrop="handleDrop(event, 'safe')" onclick="selectZoneClick('safe')">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-basis)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <h3>Veilig inzetten</h3>
+              <p>Geen risico of passend binnen de kaders</p>
+            </div>
+            <div class="dropzone dropzone-adapt" id="zone-adapt" ondragover="allowDrag(event)" ondragleave="clearDrag(event)" ondrop="handleDrop(event, 'adapt')" onclick="selectZoneClick('adapt')">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.66V17c0 .55-.45 1-1 1H4v-2.28c0-.55.45-1 1-1h13c.55 0 1 .45 1 1zm0-5.32V12c0 .55-.45 1-1 1H4V9.66c0-.55.45-1 1-1h13c.55 0 1 .45 1 1zM20 4V6.68c0 .55-.45 1-1 1H4V4.68c0-.55.45-1 1-1h13c.55 0 1 .45 1 1z"></path></svg>
+              <h3>Eerst aanpassen</h3>
+              <p>Anonimiseren of instructies toevoegen</p>
+            </div>
+            <div class="dropzone dropzone-unsafe" id="zone-unsafe" ondragover="allowDrag(event)" ondragleave="clearDrag(event)" ondrop="handleDrop(event, 'unsafe')" onclick="selectZoneClick('unsafe')">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <h3>Niet verantwoord</h3>
+              <p>Onacceptabel risico of schending kaders</p>
+            </div>
+          </div>
+
+          <!-- Active card area -->
+          <div class="scanner-core">
+            <div id="active-card-container">
+              <!-- Dynamically populated card -->
+            </div>
+            
+            <p style="margin-top: 16px; font-size: 0.85rem; color: var(--text-muted);" id="l1-interaction-instruction">
+              Tip: sleep de kaart naar een zone, of klik direct op een zone als je op een tablet/mobiel speelt.
+            </p>
+          </div>
+
+          <!-- Formative feedback under card -->
+          <div class="feedback-panel hidden" id="l1-feedback-box">
+            <div class="feedback-status" id="l1-feedback-title">Status</div>
+            <div class="feedback-body" id="l1-feedback-text">Feedback details</div>
+            <button class="btn btn-primary" style="margin-top: 14px; padding: 8px 16px; font-size: 0.9rem;" id="btn-next-case" onclick="nextL1Case()">
+              Volgende Casus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 MULTI-SELECT RISK MODAL -->
+    <div class="overlay-modal" id="risk-modal">
+      <div class="modal-content">
+        <h3 class="modal-title">Risico-Analyse Scanner</h3>
+        <p class="modal-subtitle">Welke risicofactoren of ethische issues zijn hierbij relevant? (Kies alle aspecten die hier van toepassing zijn)</p>
+        
+        <div class="risk-grid">
+          <label class="risk-checkbox-label" id="risk-lbl-privacy" onclick="toggleRiskCheckbox('privacy')">
+            <div class="custom-checkbox" id="chk-privacy">✓</div>
+            <span>Persoonsgegevens & AVG</span>
+          </label>
+          <label class="risk-checkbox-label" id="risk-lbl-bias" onclick="toggleRiskCheckbox('bias')">
+            <div class="custom-checkbox" id="chk-bias">✓</div>
+            <span>Vooringenomenheid (Bias) & Stereotypering</span>
+          </label>
+          <label class="risk-checkbox-label" id="risk-lbl-source" onclick="toggleRiskCheckbox('source')">
+            <div class="custom-checkbox" id="chk-source">✓</div>
+            <span>Onbetrouwbare bron / Hallucinaties</span>
+          </label>
+          <label class="risk-checkbox-label" id="risk-lbl-fraud" onclick="toggleRiskCheckbox('fraud')">
+            <div class="custom-checkbox" id="chk-fraud">✓</div>
+            <span>Integriteit & Plagiaat</span>
+          </label>
+          <label class="risk-checkbox-label" id="risk-lbl-transparency" onclick="toggleRiskCheckbox('transparency')">
+            <div class="custom-checkbox" id="chk-transparency">✓</div>
+            <span>Gebrek aan Transparantie</span>
+          </label>
+          <label class="risk-checkbox-label" id="risk-lbl-dependency" onclick="toggleRiskCheckbox('dependency')">
+            <div class="custom-checkbox" id="chk-dependency">✓</div>
+            <span>Afhankelijkheid & Regieverlies</span>
+          </label>
+        </div>
+        
+        <button class="btn btn-primary" id="btn-confirm-risk" onclick="confirmRiskChoice()">
+          Bevestig Analyse
+        </button>
+      </div>
+    </div>
+
+    <!-- GENERIC FEEDBACK MODAL -->
+    <div class="overlay-modal" id="scan-feedback-modal">
+      <div class="modal-content scan-feedback-modal">
+        <h3 class="modal-title" id="scan-feedback-modal-title">Scanfeedback</h3>
+        <div class="feedback-body" id="scan-feedback-modal-text" style="text-align: left;">Feedback details</div>
+        <button class="btn btn-primary" style="margin-top: 18px;" id="btn-scan-feedback-next" onclick="continueFeedbackModal()">
+          Verder
+        </button>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 (NEW): PROMPT-TRAIL AUDIT -->
+    <div class="screen hidden" id="screen-l2">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 12px; color: var(--accent-didactiek);">Ronde 2: Prompt-Trail Audit</h2>
+        <p style="color: var(--text-muted); margin-bottom: 24px;" id="l2-lead-text">
+          Spelers-audit: Review de onderstaande chat-interactie tussen een collega en een AI-tool. Welke werkstrategie toont deze collega hier?
+        </p>
+
+        <div class="audit-workspace">
+          <div class="audit-chat-container" id="audit-chat-box">
+            <!-- Dynamically Populated Chat Bubbles -->
+          </div>
+
+          <div class="strategy-selection-grid">
+            <button class="strategy-btn" id="strat-coping" onclick="selectStrategy('coping')">
+              <div class="strategy-title">Oppervlakkig Copinggedrag</div>
+              <div class="strategy-desc">De collega neemt blindelings output over en minimaliseert eigen denkwerk.</div>
+            </button>
+            <button class="strategy-btn" id="strat-sparring" onclick="selectStrategy('sparring')">
+              <div class="strategy-title">Actieve Sparringpartner</div>
+              <div class="strategy-desc">De collega daagt de AI uit, toont kritische zin en verifieert beweringen.</div>
+            </button>
+            <button class="strategy-btn" id="strat-bypassing" onclick="selectStrategy('bypassing')">
+              <div class="strategy-title">Ontwijkend Bypassinggedrag</div>
+              <div class="strategy-desc">De collega besteedt essentiele denkstappen of vaardigheden volledig uit aan de AI.</div>
+            </button>
+          </div>
+
+          <!-- Feedback Box -->
+          <div class="feedback-panel hidden" id="l2-feedback-box">
+            <div class="feedback-status" id="l2-feedback-title">Status</div>
+            <div class="feedback-body" id="l2-feedback-text">Feedback details</div>
+            <button class="btn btn-primary" style="margin-top: 14px; padding: 8px 16px; font-size: 0.9rem;" id="btn-next-audit" onclick="nextL2Audit()">
+              Volgende Audit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3: DE AI-WERKPLAATS -->
+    <div class="screen hidden" id="screen-l3">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 12px; color: var(--accent-didactiek);">Ronde 3: De AI-Werkplaats</h2>
+        
+        <div class="workshop-objective">
+          <div class="objective-tag">Workflow-opdracht</div>
+          <div class="objective-text" id="l3-objective-text">
+            "Ontwerp een betekenisvolle AI-workflow voor het verbeteren van een concepttekst, waarbij collega's kritisch blijven nadenken en feedback verwerken zonder blind te varen op AI-output."
+          </div>
+        </div>
+
+        <div class="workshop-columns">
+          <!-- Col 1: AI Tools -->
+          <div>
+            <h3 class="column-title">
+              <span style="color: var(--accent-didactiek);">1.</span> AI-Tool Kaarten
+            </h3>
+            <div class="card-deck" id="deck-tools">
+              <!-- JS Populated -->
+            </div>
+          </div>
+
+          <!-- Col 2: Prompts -->
+          <div>
+            <h3 class="column-title">
+              <span style="color: var(--accent-didactiek);">2.</span> Prompt Kaarten
+            </h3>
+            <div class="card-deck" id="deck-prompts">
+              <!-- JS Populated -->
+            </div>
+          </div>
+
+          <!-- Col 3: Verwerking -->
+          <div>
+            <h3 class="column-title">
+              <span style="color: var(--accent-didactiek);">3.</span> Verwerkingskaarten
+            </h3>
+            <div class="card-deck" id="deck-didactics">
+              <!-- JS Populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipe summary -->
+        <div class="recipe-preview-box">
+          <h4 style="font-size: 0.95rem; text-transform: uppercase; color: var(--text-muted);">Jouw AI-Recept Blueprint:</h4>
+          <div class="recipe-grid">
+            <div class="recipe-slot" id="slot-tool">Geen Tool geselecteerd</div>
+            <div class="recipe-slot" id="slot-prompt">Geen Prompt geselecteerd</div>
+            <div class="recipe-slot" id="slot-didactiek">Geen verwerking geselecteerd</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Tip: kies precies een kaart uit elke categorie en klik op "Start de Werkplaats".
+          </p>
+          <button class="btn btn-primary" id="btn-run-workshop" disabled onclick="evaluateRecipe()">
+            Start de Werkplaats
+          </button>
+        </div>
+
+        <!-- Feedback Panel -->
+        <div class="feedback-panel hidden" id="l3-feedback-box">
+          <div class="feedback-status" id="l3-feedback-title">Werkplaats Status</div>
+          <div class="feedback-body" id="l3-feedback-text">Feedback details</div>
+          <button class="btn btn-primary" style="margin-top: 14px; padding: 8px 16px; font-size: 0.9rem;" onclick="goToRules(4)">
+            Door naar ronde 4
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LEVEL 4: DE AI-ARCHITECT -->
+    <div class="screen hidden" id="screen-l4">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 20px; color: var(--accent-visie);">Ronde 4: De AI-Architect</h2>
+        
+        <div class="architect-layout">
+          <!-- Left: Policy actions -->
+          <div class="policies-container" id="policies-deck">
+            <!-- JS Populated -->
+          </div>
+
+          <!-- Right: Interactive dashboard and energy -->
+          <div class="architect-sidebar">
+            <div class="energy-bank">
+              <h3 class="energy-bank-title">Energie-Budget Scan</h3>
+              <div class="coins-row" id="coins-container">
+                <div class="coin" id="coin-1" onclick="recallCoin(1)">⚡</div>
+                <div class="coin" id="coin-2" onclick="recallCoin(2)">⚡</div>
+                <div class="coin" id="coin-3" onclick="recallCoin(3)">⚡</div>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted);" id="energy-bank-hint">
+                Verdeel je 3 energie-munten over de beleidsmaatregelen links. Klik op een leeg muntslot om een munt in te zetten. Klik op een ingezette munt om deze terug te halen.
+              </p>
+            </div>
+
+            <div class="live-dash">
+              <h3 class="dash-title">Organisatie Status-Indicatoren</h3>
+              
+              <div class="dash-meter-item">
+                <div class="dash-meter-header">
+                  <span>AI-Competentie & Cultuur</span>
+                  <span id="meter-culture-val">50%</span>
+                </div>
+                <div class="dash-meter-track">
+                  <div class="dash-meter-fill" id="meter-culture-fill" style="width: 50%;"></div>
+                </div>
+              </div>
+
+              <div class="dash-meter-item">
+                <div class="dash-meter-header">
+                  <span>Dataveiligheid & AVG-Borging</span>
+                  <span id="meter-safety-val">50%</span>
+                </div>
+                <div class="dash-meter-track">
+                  <div class="dash-meter-fill" id="meter-safety-fill" style="width: 50%;"></div>
+                </div>
+              </div>
+
+              <div class="dash-meter-item">
+                <div class="dash-meter-header">
+                  <span>Innovatie & Praktijkwaarde</span>
+                  <span id="meter-innovation-val">50%</span>
+                </div>
+                <div class="dash-meter-track">
+                  <div class="dash-meter-fill" id="meter-innovation-fill" style="width: 50%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="btn-submit-architect" disabled style="width: 100%; justify-content: center;" onclick="evaluateArchitect()">
+              Evalueer keuzes
+            </button>
+          </div>
+        </div>
+
+        <!-- Level 4 Feedback overlay/box -->
+        <div class="feedback-panel hidden" id="l4-feedback-box" style="margin-top: 24px;">
+          <div class="feedback-status" id="l4-feedback-title">Beleidsanalyse</div>
+          <div class="feedback-body" id="l4-feedback-text">Feedback details</div>
+          <button class="btn btn-primary" style="margin-top: 14px; padding: 8px 16px; font-size: 0.9rem;" onclick="showFinalResults()">
+            Toon scanrapport
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LEVEL UP INTERMEDIATE SCREEN -->
+    <div class="screen hidden" id="screen-levelup">
+      <div class="glass-panel level-up-box">
+        <div class="level-up-tag" id="levelup-tag">Ronde voltooid</div>
+        <h2 class="level-up-title" id="levelup-title">Scanronde klaar</h2>
+        <p class="level-up-desc" id="levelup-desc">
+          Uitstekend werk. Je hebt de uitdagingen getrotseerd en je competenties getoond. Bereid je voor op de volgende missie.
+        </p>
+        <button class="btn btn-primary" id="btn-levelup-continue" onclick="continueToNextScreen()">
+          Doorgaan
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: FINAL RESULTS SCREEN -->
+    <div class="screen hidden" id="screen-results">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 24px; text-align: center; font-size: 2.2rem; background: linear-gradient(to right, #ffffff, var(--accent-didactiek)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          Jouw AI-Kompas Scanrapport
+        </h2>
+
+        <div class="results-layout">
+          <!-- Left: Chart -->
+          <div class="chart-container">
+            <canvas id="competenceChart" style="max-width: 100%; max-height: 360px;"></canvas>
+          </div>
+
+          <!-- Right: Feedback report -->
+          <div class="assessment-feedback">
+            <div class="profile-title-box">
+              <span class="profile-badge">Adviesniveau</span>
+              <div class="profile-name" id="final-profile-name">AI-Kompas Profiel</div>
+            </div>
+            
+            <p class="profile-text" id="final-profile-feedback">
+              Laden van missie evaluatie...
+            </p>
+
+            <div class="improvement-box">
+              <div class="improvement-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Geadviseerd Ontwikkeldoel:
+              </div>
+              <span id="final-profile-goal"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-explainer" id="scan-scope-note"></div>
+
+        <div class="result-section">
+          <div class="section-heading-row">
+            <div>
+              <span class="profile-badge">Vijf domeinen</span>
+              <h3>Wat was zichtbaar in je antwoorden?</h3>
+            </div>
+            <p class="section-note">
+              De balken tonen bewijs dat in deze compacte scan zichtbaar werd. Ze vervangen de oude driehoekgrafiek, omdat een nettoscore positieve signalen kon wegstrepen tegen latere risicokeuzes.
+            </p>
+          </div>
+          <div class="evidence-grid" id="evidence-summary-grid"></div>
+        </div>
+
+        <div class="result-section">
+          <div class="section-heading-row">
+            <div>
+              <span class="profile-badge">Terugblik</span>
+              <h3>Wat had sterker gekund?</h3>
+            </div>
+            <p class="section-note">
+              Deze punten zijn gekoppeld aan keuzes in de scan en laten zien waar het antwoord nog dichter bij de competentiegids had kunnen liggen.
+            </p>
+          </div>
+          <div class="reflection-list" id="final-reflection-list"></div>
+        </div>
+
+        <div class="result-section">
+          <div class="section-heading-row">
+            <div>
+              <span class="profile-badge">Competentiegids</span>
+              <h3>Criteria per niveau</h3>
+            </div>
+            <p class="section-note">
+              Niveau 1 en 2 staan volledig in beeld; niveau 3 laat zien waar de scan strategische signalen raakt. Per criterium zie je of het is aangetoond, deels zichtbaar, nog niet zichtbaar of niet direct getoetst.
+            </p>
+          </div>
+          <div class="criteria-legend" id="criteria-legend"></div>
+          <div id="criteria-guide"></div>
+        </div>
+
+        <!-- Submit to Google Sheets panel -->
+        <div class="submit-section">
+          <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Scanresultaat Vastleggen</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Sla je resultaten optioneel op in het centrale dashboard. Voer een anonieme collega-code, teamnaam of afkorting in.
+          </p>
+          
+          <div class="submit-form">
+            <input type="text" class="input-field" id="input-anon-id" placeholder="Bijv. TEAM-8182" max="25">
+            <button class="btn btn-primary" id="btn-submit-data" onclick="submitAssessment()">
+              Resultaten Opslaan
+            </button>
+          </div>
+          
+          <!-- Submit Status Microfeedback -->
+          <p id="submit-status-msg" style="margin-top: 12px; font-size: 0.85rem; display: none;"></p>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+          <button class="btn" onclick="restartGame()">Scan opnieuw doen</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>© 2026 AI-Kompas Scan</p>
+    </footer>
+
+  </div>
+
+  <script>
+    /* =========================================================================
+       SCORING MATRIX & GAME CONTENT OBJECTS
+       ========================================================================= */
+       
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxT30gn077ftNXWA73jFIPk7KYcXfyFWnLc6op7iW0C8J-EmurP_8D6fGhuuynKgwq7mw/exec";
+
+    const DIMENSIONS = [
+      { key: "kennisTechniek", label: "Kennis tools & techniek", color: "#00e5ff" },
+      { key: "vaardigheid", label: "Vaardigheid", color: "#00fa9a" },
+      { key: "ethiek", label: "Ethiek", color: "#ffb300" },
+      { key: "visieMentaliteit", label: "Visie & mentaliteit", color: "#b39ddb" },
+      { key: "wetBeleid", label: "Wet & beleid", color: "#ff4a5a" }
+    ];
+
+    const STATUS_META = {
+      shown: { label: "Aangetoond", icon: "&#10003;", className: "status-shown" },
+      partial: { label: "Deels zichtbaar", icon: "~", className: "status-partial" },
+      notShown: { label: "Nog niet zichtbaar", icon: "!", className: "status-not-shown" },
+      notTested: { label: "Niet getoetst", icon: "-", className: "status-not-tested" }
+    };
+
+    const COMPETENCY_GUIDE = [
+      {
+        level: 1,
+        title: "Niveau 1",
+        subtitle: "Maakt bewuste keuzes over AI-gebruik en handelt verantwoord.",
+        criteria: [
+          { id: "n1_choices", dimension: "vaardigheid", text: "Maakt bewuste keuzes over AI-gebruik en handelt verantwoord.", signals: ["l1_most_zones"], partialSignals: ["l1_correct_zone", "l1_risk_any"] },
+          { id: "n1_types", dimension: "kennisTechniek", text: "Kan uitleggen welke verschillende typen AI er zijn.", notTested: true },
+          { id: "n1_presence", dimension: "kennisTechniek", text: "Weet of AI aanwezig is in software die je gebruikt.", notTested: true },
+          { id: "n1_tool_fit", dimension: "kennisTechniek", text: "Kan AI-tools die je tegenkomt beoordelen op geschiktheid voor een taak.", signals: ["secure_tool", "specialized_tool"], partialSignals: ["l3_any_workflow"] },
+          { id: "n1_use_or_not", dimension: "vaardigheid", text: "Maakt weloverwogen keuzes om AI wel of niet te gebruiken.", signals: ["l1_most_zones"], partialSignals: ["l1_correct_zone"] },
+          { id: "n1_output_check", dimension: "vaardigheid", text: "Kan output van AI kritisch evalueren en verifieren met gepaste grondigheid.", signals: ["risk_source", "human_review", "l2_correct_audit_2"], partialSignals: ["l2_most_audits"] },
+          { id: "n1_avg_policy", dimension: "wetBeleid", text: "Kent relevante aspecten van AVG, AI-Act en HU-beleid en handelt hiernaar.", signals: ["risk_privacy", "policy_guideline"], partialSignals: ["l1_risk_any"] },
+          { id: "n1_privacy", dimension: "wetBeleid", text: "Past privacybeschermende maatregelen toe bij AI-gebruik, waaronder anonimiseren van data.", signals: ["risk_privacy", "secure_tool"], partialSignals: ["policy_guideline"] },
+          { id: "n1_transparency", dimension: "ethiek", text: "Is transparant over eigen AI-gebruik.", signals: ["risk_transparency"], partialSignals: ["policy_guideline"] },
+          { id: "n1_ethical_weighing", dimension: "ethiek", text: "Weegt ethische aspecten van AI-gebruik af, zoals duurzaamheid, privacy, bias en andere HU-waarden.", signals: ["risk_bias", "risk_privacy", "policy_guideline"], partialSignals: ["l1_risk_any"] },
+          { id: "n1_responsibility", dimension: "ethiek", text: "Neemt eindverantwoordelijkheid voor met AI tot stand gekomen resultaten.", signals: ["human_review", "l2_correct_audit_3"], partialSignals: ["l3_any_workflow"] },
+          { id: "n1_learning_need", dimension: "visieMentaliteit", text: "Kan eigen leerbehoefte op AI-geletterdheid inschatten en weet expertise te vinden binnen de HU.", notTested: true, partialSignals: ["policy_learning"] },
+          { id: "n1_thinking", dimension: "visieMentaliteit", text: "Is zich ervan bewust hoe AI-gebruik eigen denken en handelen verandert.", signals: ["l2_correct_audit_1", "l2_correct_audit_2"], partialSignals: ["l2_most_audits"] },
+          { id: "n1_teacher_assessment", dimension: "vaardigheid", text: "Docenten: Stemt toetsing en begeleiding af op de mogelijkheid dat studenten AI kunnen gebruiken.", notTested: true },
+          { id: "n1_teacher_dialogue", dimension: "visieMentaliteit", text: "Docenten: Voert een open dialoog met studenten over de invloed van AI op het leerproces.", notTested: true, partialSignals: ["policy_awareness"] },
+          { id: "n1_research_document", dimension: "wetBeleid", text: "Onderzoek: Documenteert AI-gebruik in het onderzoeksproces zodanig dat het voor anderen navolgbaar en reproduceerbaar is.", notTested: true },
+          { id: "n1_research_participants", dimension: "wetBeleid", text: "Onderzoek: Informeert onderzoekdeelnemers transparant over hoe hun gegevens worden verwerkt met AI.", notTested: true }
+        ]
+      },
+      {
+        level: 2,
+        title: "Niveau 2",
+        subtitle: "Experimenteert met AI en deelt inzichten met collega's.",
+        criteria: [
+          { id: "n2_capabilities", dimension: "kennisTechniek", text: "Kan de capaciteiten en beperkingen van AI-tools beoordelen.", signals: ["l2_most_audits", "l3_any_workflow"], partialSignals: ["l2_correct_audit_2"] },
+          { id: "n2_domain_tools", dimension: "kennisTechniek", text: "Houdt ontwikkelingen in vakspecifieke AI-tools bij.", notTested: true },
+          { id: "n2_technical_working", dimension: "kennisTechniek", text: "Heeft inzicht in de technische werking van verschillende AI-tools.", notTested: true, partialSignals: ["l3_any_workflow"] },
+          { id: "n2_tool_decision", dimension: "vaardigheid", text: "Maakt op basis van een taak een weloverwogen beslissing over of en welke AI-tool(s) geschikt zijn en bespreekt dit met collega's.", signals: ["secure_tool", "specialized_tool"], partialSignals: ["l3_any_workflow"] },
+          { id: "n2_workprocess", dimension: "vaardigheid", text: "Analyseert eigen werkprocessen en besluit wanneer AI-inzet meerwaarde biedt.", signals: ["strong_workflow", "human_review", "policy_cocreation"], partialSignals: ["l3_any_workflow"] },
+          { id: "n2_configure", dimension: "vaardigheid", text: "Configureert AI-toepassingen door bijvoorbeeld modelkeuze, context, documenten en instructies aan te passen voor eigen workflow.", signals: ["criteria_prompt", "context_prompt"], partialSignals: ["l3_any_workflow"] },
+          { id: "n2_society", dimension: "ethiek", text: "Houdt rekening met implicaties van AI-gebruik op mens en samenleving en handelt daarnaar.", signals: ["risk_bias", "policy_guideline"], partialSignals: ["risk_privacy"] },
+          { id: "n2_learning_process", dimension: "visieMentaliteit", text: "Anticipeert op de invloed van AI-gebruik op het eigen denk- en leerproces.", signals: ["l2_correct_audit_1", "l2_correct_audit_3"], partialSignals: ["l2_most_audits"] },
+          { id: "n2_development", dimension: "visieMentaliteit", text: "Verkent nieuwe AI-ontwikkelingen in het vakgebied en neemt initiatief in de eigen professionele ontwikkeling.", notTested: true },
+          { id: "n2_experiment", dimension: "visieMentaliteit", text: "Toont een onderzoekende houding om met collega's te experimenteren en reflecteren op nieuwe manieren om AI toe te passen.", signals: ["policy_cocreation", "l2_correct_audit_2"], partialSignals: ["l3_any_workflow"] },
+          { id: "n2_teacher_design", dimension: "vaardigheid", text: "Docenten: Ontwerpt en evalueert onderwijs over AI op basis van didactische en pedagogische principes.", signals: ["policy_learning"], partialSignals: ["policy_awareness"] },
+          { id: "n2_teacher_teach", dimension: "ethiek", text: "Docenten: Geeft les over AI-geletterdheid en thema's zoals ethische dilemma's in AI.", notTested: true, partialSignals: ["policy_learning"] },
+          { id: "n2_research_methods", dimension: "visieMentaliteit", text: "Onderzoek: Verkent implicaties van AI-tools voor onderzoeksmethoden.", notTested: true, partialSignals: ["policy_cocreation"] },
+          { id: "n2_research_access", dimension: "vaardigheid", text: "Onderzoek: Kan AI gebruiken om onderzoeksresultaten toegankelijk te maken voor diverse doelgroepen.", notTested: true }
+        ]
+      },
+      {
+        level: 3,
+        title: "Niveau 3",
+        subtitle: "Draagt bij aan verantwoorde AI-integratie in de organisatie en inspireert anderen.",
+        criteria: [
+          { id: "n3_integration", dimension: "visieMentaliteit", text: "Draagt bij aan verantwoorde AI-integratie in de organisatie en inspireert anderen.", signals: ["policy_learning", "policy_cocreation"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_systemic", dimension: "visieMentaliteit", text: "Analyseert de gevolgen van AI op systemisch niveau, inclusief beleids-, maatschappelijke en ecologische implicaties.", signals: ["policy_guideline", "policy_cocreation"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_emerging", dimension: "kennisTechniek", text: "Signaleert opkomende AI-ontwikkelingen, analyseert de impact ervan op het werkveld en agendeert deze binnen de HU.", notTested: true },
+          { id: "n3_literacy", dimension: "vaardigheid", text: "Begeleidt de ontwikkeling van AI-geletterdheid bij studenten en collega's, op basis van wetenschappelijke kennis en praktijkervaring.", signals: ["policy_learning", "policy_awareness"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_develop_apps", dimension: "kennisTechniek", text: "Ontwikkelt AI-toepassingen in samenwerking met andere disciplines of partners binnen en buiten de HU.", signals: ["policy_cocreation"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_redesign", dimension: "vaardigheid", text: "(Her)ontwerpt bredere werkprocessen met een structurele integratie van AI en implementeert deze.", signals: ["policy_learning", "policy_cocreation"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_policy", dimension: "wetBeleid", text: "Draagt bij aan visie, beleid en het professionaliseringsaanbod over AI op team-, instituut- of organisatieniveau.", signals: ["policy_guideline", "policy_learning"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_rolemodel", dimension: "visieMentaliteit", text: "Is een aanspreekpunt en rolmodel voor collega's over verantwoord AI-gebruik.", notTested: true, partialSignals: ["policy_guideline", "policy_learning"] },
+          { id: "n3_public", dimension: "visieMentaliteit", text: "Voedt publieke dialoog over verantwoord AI-gebruik door actief bij te dragen aan uitingen.", notTested: true },
+          { id: "n3_values", dimension: "ethiek", text: "Is pleitbezorger voor de waardegedreven toepassing van AI.", signals: ["risk_bias", "policy_guideline"], partialSignals: ["risk_privacy"] },
+          { id: "n3_culture", dimension: "ethiek", text: "Draagt bij aan een cultuur waarin transparant en kritisch AI-gebruik de norm is.", signals: ["policy_guideline", "policy_cocreation", "policy_awareness"], partialSignals: ["l4_any_policy"] },
+          { id: "n3_teacher_curriculum", dimension: "vaardigheid", text: "Docenten: Integreert AI-geletterdheid in het curriculum.", signals: ["policy_learning"], partialSignals: ["policy_awareness"] },
+          { id: "n3_research_agenda", dimension: "kennisTechniek", text: "Onderzoek: Vertaalt nieuwe AI-ontwikkelingen naar implicaties voor methoden, normen en onderzoeksagenda's in het eigen vakgebied.", notTested: true }
+        ]
+      }
+    ];
+
+    // GAME STATE VARIABLES
+    let state = {
+      scores: {
+        basisEthiek: 0,
+        didactiekTechniek: 0,
+        visieBeleid: 0
+      },
+      choices: {
+        level1: [],
+        level2: [],
+        level3: null,
+        level4: []
+      },
+      level1CurrentIndex: 0,
+      level1TempZone: null, 
+      level2CurrentIndex: 0,
+      currentLevel: 1,
+      l4AssignedCoins: [null, null, null],
+      level1SelectedRisks: [] // Tracks currently checked risks in modal
+    };
+
+    // LEVEL 1: SUBTLE CASES (No obvious tells, positive adapt scoring)
+    const L1_CASES = [
+      {
+        id: "case_1",
+        title: "Conceptadvies Samenvatten",
+        text: "Een collega wil tijd besparen. Ze kopieert een conceptadvies over de begeleiding van een medewerker en een besluit dat volgende week in het MT wordt besproken in een publieke generatieve teksttool om automatisch een samenvatting en feedback te laten maken.",
+        bestZone: "adapt",
+        correctRisks: ["privacy", "transparency"],
+        feedback: {
+          success: "Goed geanalyseerd! Direct uploaden van herleidbare persoonsgegevens en interne informatie is niet verantwoord. Als de collega de tekst eerst anonimiseert, vertrouwelijke details verwijdert en duidelijk maakt waar AI is gebruikt, kan dit wel een bruikbare werkwijze zijn.",
+          partial: "Goed gescand. Je ziet dat er risico's zijn. De sleutel is hier: eerst anonimiseren, vertrouwelijke informatie weghalen en transparant blijven over AI-gebruik.",
+          fail: "Dit is niet correct. De inhoud bevat persoonsgegevens en interne context. Met stevige aanpassingen vooraf is de activiteit mogelijk, maar direct invoeren in een publieke tool is te risicovol."
+        },
+        scoring: {
+          safe: { score: 0, ethic: 0 },
+          adapt: { score: 3, ethic: 2, didactiek: 1 },
+          unsafe: { score: 1, ethic: 1 }
+        }
+      },
+      {
+        id: "case_2",
+        title: "Projecttekst Vertalen",
+        text: "Een collega wil een projectbeschrijving vertalen voor internationale partners. De tekst staat al op de projectwebsite en beschrijft vooral doelen, planning en specialistische vaktermen.",
+        bestZone: "safe",
+        correctRisks: ["source"],
+        feedback: {
+          success: "Uitstekend beoordeeld! Omdat de tekst openbaar en niet herleidbaar is, kan een vertaaltool veilig worden ingezet. Wel blijft menselijke controle nodig op nuance, vaktermen en toon.",
+          partial: "Dit is veilig wat betreft privacy en vertrouwelijkheid. Het belangrijkste aandachtspunt is kwaliteitscontrole op terminologie en betekenis.",
+          fail: "Dat is te streng. Een openbare, niet-vertrouwelijke tekst vertalen is verantwoord. Handmatige controle op vaktaal blijft wel nodig."
+        },
+        scoring: {
+          safe: { score: 3, didactiek: 2, ethic: 1 },
+          adapt: { score: 2, didactiek: 1 },
+          unsafe: { score: 0, ethic: 0 }
+        }
+      },
+      {
+        id: "case_3",
+        title: "FAQ Voor Collega's",
+        text: "Een team laat een LLM twintig FAQ-antwoorden genereren op basis van een werkinstructie die meerdere uitzonderingen en procesafspraken bevat. De antwoorden worden direct op intranet geplaatst als officiele uitleg voor collega's.",
+        bestZone: "adapt",
+        correctRisks: ["source", "dependency"],
+        feedback: {
+          success: "Scherp gescand! Een LLM kan helpen bij het maken van FAQ's, maar menselijke controle is nodig voordat antwoorden als officiele uitleg worden gepubliceerd. Anders kunnen hallucinaties of verkeerde interpretaties zich snel verspreiden.",
+          partial: "Correct dat je risico signaleert. Zonder review kunnen collega's vertrouwen op foutieve of onvolledige AI-antwoorden.",
+          fail: "Dit is riskant. AI-modellen kunnen plausibel klinkende fouten maken. Publiceren zonder controle schaadt betrouwbaarheid en kan werkprocessen verstoren."
+        },
+        scoring: {
+          safe: { score: 0, didactiek: 0 },
+          adapt: { score: 3, didactiek: 2, ethic: 1 },
+          unsafe: { score: 1, ethic: 0 }
+        }
+      },
+      {
+        id: "case_4",
+        title: "Beeld Voor Campagne",
+        text: "Voor een interne campagne genereert een collega met een tekst-naar-beeld-model afbeeldingen van 'professionals die samenwerken'. De eerste serie beelden oogt strak en bruikbaar, maar toont vooral jonge mannen met dezelfde uitstraling. Bij tijdgebrek gebruikt de collega ze toch.",
+        bestZone: "unsafe",
+        correctRisks: ["bias", "transparency"],
+        feedback: {
+          success: "Scherp opgemerkt! Bevooroordeelde of stereotype beelden klakkeloos gebruiken botst met inclusieve communicatie. De collega had prompts moeten aanpassen, alternatieven moeten zoeken of expliciet moeten kiezen voor representatieve beelden.",
+          partial: "Je herkent de ethische implicaties. Dit direct doorvoeren is niet wenselijk, omdat eenzijdige AI-beelden stereotypes kunnen normaliseren.",
+          fail: "Dit is niet verantwoord. Ook als de beelden snel beschikbaar zijn, blijft representatieve en transparante communicatie belangrijk."
+        },
+        scoring: {
+          safe: { score: 0, ethic: 0 },
+          adapt: { score: 1, ethic: 1 },
+          unsafe: { score: 3, ethic: 2, didactiek: 1 }
+        }
+      }
+    ];
+
+    // LEVEL 2: PROMPT-TRAIL AUDITS (NEW LEVEL)
+    const L2_TRAILS = [
+      {
+        id: "audit_1",
+        participantName: "Daan",
+        chat: [
+          { sender: "Collega", text: "Schrijf een inleiding van 200 woorden voor ons projectvoorstel over hybride samenwerken." },
+          { sender: "AI", text: "Hybride samenwerken is een essentieel onderdeel van moderne organisaties. Het combineert flexibiliteit, digitale samenwerking en betere balans tussen werk en prive..." },
+          { sender: "Collega", text: "Bedankt. Vertaal dit nu naar het Engels zodat ik het direct in het voorstel kan plakken." }
+        ],
+        correctStrategy: "coping",
+        feedback: "Correct geanalyseerd! Daan vertoont **Oppervlakkig Copinggedrag**. Hij gebruikt de AI als snelle vervanger van eigen denk- en schrijfwerk en reflecteert niet op kwaliteit, claims of passendheid van de tekst.",
+        scoring: { coping: 3, sparring: 0, bypassing: 1 }
+      },
+      {
+        id: "audit_2",
+        participantName: "Sophie",
+        chat: [
+          { sender: "Collega", text: "Geef feedback op mijn stelling: 'AI-besluitondersteuning verhoogt altijd de kwaliteit van dienstverlening.' Ik baseer dit op een rapport van Gartner uit 2020." },
+          { sender: "AI", text: "Je stelling is duidelijk, maar het woord 'altijd' is erg absoluut. Gartner beschrijft meestal voorwaarden zoals datakwaliteit, governance, menselijke controle en veranderbereidheid..." },
+          { sender: "Collega", text: "Dat is nuttig. Kun je aangeven welke aannames ik expliciet moet toetsen en welke bronclaims ik apart moet verifieren voordat ik dit in mijn advies gebruik?" }
+        ],
+        correctStrategy: "sparring",
+        feedback: "Uitstekend beoordeeld! Sophie gebruikt de AI als een **Actieve Sparringpartner**. Ze voert een kritische dialoog, toetst aannames en vraagt expliciet om verificatie voordat ze de output gebruikt.",
+        scoring: { coping: 0, sparring: 3, bypassing: 0 }
+      },
+      {
+        id: "audit_3",
+        participantName: "Mark",
+        chat: [
+          { sender: "Collega", text: "Ik moet drie scenario's uitwerken voor een implementatieplan van een nieuwe AI-tool in ons team." },
+          { sender: "AI", text: "Hier zijn drie opties:\n1. Een voorzichtige pilot met beperkte groep.\n2. Een gefaseerde uitrol per proces.\n3. Een snelle brede introductie met centrale ondersteuning." },
+          { sender: "Collega", text: "Kies de beste optie, schrijf de volledige besluitnotitie en verzin alvast drie onderbouwende bronnen die ik later kan invullen." }
+        ],
+        correctStrategy: "bypassing",
+        feedback: "Heel scherp! Mark vertoont **Ontwijkend Bypassinggedrag**. Hij laat de AI essentiele keuzes maken en vraagt zelfs om verzonnen brononderbouwing. Dat ondermijnt kwaliteit, transparantie en betrouwbaarheid.",
+        scoring: { coping: 1, sparring: 0, bypassing: 3 }
+      }
+    ];
+
+    // LEVEL 3: WORKSHOP CARDS (Implicit card names, 4x4x4 structure, dynamic gradations)
+    const L3_CARDS = {
+      tools: [
+        { id: "inst_ai", label: "Afgeschermde AI-Assistent", desc: "Gebruikersomgeving binnen de beveiligde organisatieomgeving.", type: "tool", scores: { basisEthiek: 3, didactiekTechniek: 1 } },
+        { id: "open_llm", label: "Generatieve Cloud-tool", desc: "Publiek LLM-platform met gratis persoonlijk account.", type: "tool", scores: { basisEthiek: -1, didactiekTechniek: 1 } },
+        { id: "translation_tool", label: "Vertaal & Tekst Editor", desc: "Gespecialiseerde editor voor grammatica-, toon- en zinscontrole.", type: "tool", scores: { basisEthiek: 1, didactiekTechniek: 1 } },
+        { id: "image_gen", label: "Afbeeldingen Generator", desc: "Publiek model voor grafisch en illustratief materiaal.", type: "tool", scores: { basisEthiek: 0, didactiekTechniek: 0 } }
+      ],
+      prompts: [
+        { id: "rubric_prompt", label: "Doelgerichte Criteria-Prompt", desc: "Gevoed met specifieke succescriteria, randvoorwaarden en doelgroep.", type: "prompt", scores: { didactiekTechniek: 3 } },
+        { id: "generic_prompt", label: "Generieke feedbackprompt", desc: "Eenvoudige instructie: 'Controleer deze tekst op fouten'.", type: "prompt", scores: { didactiekTechniek: 1 } },
+        { id: "structured_prompt", label: "Gedetailleerde Structuur-Prompt", desc: "Instructie gericht op opbouw, argumentatie en ontbrekende onderdelen.", type: "prompt", scores: { didactiekTechniek: 2 } },
+        { id: "keyword_prompt", label: "Eenvoudige trefwoorden-prompt", desc: "Lijst losse termen: 'feedback, spelling, schrijfstijl'.", type: "prompt", scores: { didactiekTechniek: 0 } }
+      ],
+      didactics: [
+        { id: "critical_eval", label: "Kritisch evaluatiemodel", desc: "Collega's beoordelen schriftelijk wat bruikbaar, twijfelachtig en onjuist is aan de AI-output.", type: "didactiek", scores: { didactiekTechniek: 3, basisEthiek: 2 } },
+        { id: "direct_grade", label: "Directe integratie in eindproduct", desc: "Aanbevelingen worden direct doorgevoerd zonder review.", type: "didactiek", scores: { didactiekTechniek: -2, basisEthiek: 0 } },
+        { id: "peer_review", label: "Peer-review sparringpartner", desc: "AI-feedback fungeert als extra perspectief naast feedback van een collega.", type: "didactiek", scores: { didactiekTechniek: 2, basisEthiek: 1 } },
+        { id: "auto_grading", label: "Automatisch beoordelen & accorderen", desc: "AI-oordeel telt direct mee als besluit of kwaliteitsbeoordeling.", type: "didactiek", scores: { didactiekTechniek: -2, basisEthiek: -1 } }
+      ]
+    };
+
+    // Level 3 Recipe grading matrix
+    const L3_RECIPES = {
+      "inst_ai_rubric_prompt_critical_eval": {
+        rating: "excellent",
+        title: "Sterke AI-Workflow!",
+        text: "Dit is een solide standaard. Je combineert een privacy-veilige AI-assistent met duidelijke criteria en een kritische evaluatiestap. De collega houdt regie, de output wordt beter en de data blijft beschermd.",
+        bonus: { didactiekTechniek: 4, basisEthiek: 3 }
+      },
+      "inst_ai_generic_prompt_peer_review": {
+        rating: "good",
+        title: "Solide Werkproces",
+        text: "Een sterke en veilige opzet. De afgeschermde assistent borgt privacy en peer-review houdt menselijk oordeel in de workflow. De prompt is wat generiek, maar door actieve verwerking blijft de kwaliteit redelijk geborgd.",
+        bonus: { didactiekTechniek: 2, basisEthiek: 2 }
+      },
+      "open_llm_generic_prompt_direct_grade": {
+        rating: "poor",
+        title: "Ethische En Kwalitatieve Valkuil",
+        text: "Dit recept brengt risico's met zich mee. Door een openbaar model te gebruiken kan gevoelige informatie uitlekken. Omdat de prompt generiek is en output blind wordt overgenomen, ontstaat een kwetsbaar en oppervlakkig werkproces.",
+        bonus: { didactiekTechniek: -2, basisEthiek: -2 }
+      },
+      "inst_ai_rubric_prompt_auto_grading": {
+        rating: "risky",
+        title: "Kwaliteitsrisico Bij Besluitvorming",
+        text: "Hoewel privacy goed geborgd is en de prompt sterk is, blijft automatisch beoordelen of accorderen door AI een valkuil. AI mist context en betrouwbaarheid voor besluiten zonder menselijke tussenkomst.",
+        bonus: { didactiekTechniek: -1, basisEthiek: -1 }
+      }
+    };
+
+    // LEVEL 4: POLICIES DATA (No tells in cards)
+    const L4_POLICIES = [
+      {
+        id: "workshop",
+        title: "Inspiratiesessies Prompten",
+        desc: "Organiseer eenmalige workshops en presentaties voor het hele team.",
+        metrics: { culture: 25, safety: 5, innovation: 15 },
+        scores: { visieBeleid: 1, didactiekTechniek: 1, basisEthiek: 0 },
+        feedback: "Goed voor eerste bewustwording en enthousiasme, maar het heeft weinig structurele impact als er geen vervolg, oefening of borging komt."
+      },
+      {
+        id: "curriculum",
+        title: "Leerlijn AI-Geletterdheid",
+        desc: "Integreer AI-competenties stapsgewijs en structureel in functieprofielen, teamontwikkeling en werkprocessen.",
+        metrics: { culture: 35, safety: 15, innovation: 30 },
+        scores: { visieBeleid: 4, didactiekTechniek: 2, basisEthiek: 1 },
+        feedback: "Uitmuntende strategische keuze. Dit zorgt voor duurzame competentieontwikkeling in plaats van losse experimenten."
+      },
+      {
+        id: "guideline",
+        title: "AI- En AVG-Richtlijnen",
+        desc: "Ontwikkel heldere afspraken over toegestaan AI-gebruik, dataveiligheid, transparantie en menselijke controle.",
+        metrics: { culture: 10, safety: 45, innovation: 5 },
+        scores: { visieBeleid: 3, basisEthiek: 3, didactiekTechniek: 0 },
+        feedback: "Cruciaal voor kwaliteitsborging. Dit schept duidelijkheid, voorkomt willekeur en helpt collega's verantwoord handelen."
+      },
+      {
+        id: "mandate",
+        title: "Verplicht AI-Gebruik Per Proces",
+        desc: "Leg vast dat elke collega in elk werkproces actief generatieve AI-tools moet gebruiken.",
+        metrics: { culture: -20, safety: -10, innovation: 30 },
+        scores: { visieBeleid: 0, didactiekTechniek: 1, basisEthiek: -2 },
+        feedback: "Geforceerd beleid. Dit leidt snel tot weerstand, schijngebruik en grotere risico's doordat context, doel en veiligheid niet per proces zijn afgewogen."
+      },
+      {
+        id: "co_creation",
+        title: "Co-Creatie Labs Met Praktijkexperts",
+        desc: "Richt werkgroepen in waarin collega's, experts en eindgebruikers periodiek AI-oplossingen testen en verbeteren.",
+        metrics: { culture: 20, safety: 15, innovation: 35 },
+        scores: { visieBeleid: 3, didactiekTechniek: 2, basisEthiek: 1 },
+        feedback: "Sterke cocreatie. Hierdoor blijven toepassingen praktisch bruikbaar, gedragen door het team en beter afgestemd op echte werkprocessen."
+      }
+    ];
+
+    /* =========================================================================
+       SCREENS TRANSITIONS
+       ========================================================================= */
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      document.getElementById(screenId).classList.remove('hidden');
+      
+      const statusBar = document.getElementById('status-bar');
+      if (screenId === 'screen-welcome' || screenId === 'screen-rules') {
+        statusBar.classList.add('hidden');
+      } else {
+        statusBar.classList.remove('hidden');
+        updateStatusBarHTML();
+      }
+    }
+
+    function updateStatusBarHTML() {
+      document.getElementById('score-basis').textContent = state.scores.basisEthiek;
+      document.getElementById('score-didactiek').textContent = state.scores.didactiekTechniek;
+      document.getElementById('score-visie').textContent = state.scores.visieBeleid;
+    }
+
+    function goToRules(levelNum) {
+      state.currentLevel = levelNum;
+      const title = document.getElementById('rules-title-text');
+      const desc = document.getElementById('rules-desc-text');
+      const icon = document.getElementById('rules-icon-box');
+      
+      if (levelNum === 1) {
+        icon.textContent = "🔍";
+        title.textContent = "Ronde 1: De Risico-Scanner";
+        desc.innerHTML = "Er verschijnen casuskaarten van realistische werksituaties. Sleep elke kaart naar de juiste zone:<br><strong>1. Veilig inzetten</strong>, <strong>2. Eerst aanpassen</strong>, of <strong>3. Niet verantwoord</strong>.<br><br>Daarna scan je de situatie op alle aanwezige risico's om de ronde te voltooien.";
+      } else if (levelNum === 2) {
+        icon.textContent = "📊";
+        title.textContent = "Ronde 2: Prompt-Trail Audit";
+        desc.innerHTML = "Als collega moet je AI-gebruik kunnen beoordelen. We tonen je chat-logs (Prompt Trails) waarin collega's samenwerken met AI.<br><br>Audit de interactie en categoriseer de werkstrategie correct.";
+      } else if (levelNum === 3) {
+        icon.textContent = "🛠️";
+        title.textContent = "Ronde 3: De AI-Werkplaats";
+        desc.innerHTML = "In de werkplaats configureer je een effectieve AI-workflow. Je bouwt een AI-recept door kaarten te selecteren uit drie categorieen:<br><strong>AI-Tool</strong> + <strong>Prompting/Instructie</strong> + <strong>Kritische verwerking</strong>.<br><br>Let op: de kaarten zijn neutraal geformuleerd. Vertrouw op je professionele oordeel!";
+      } else if (levelNum === 4) {
+        icon.textContent = "🏛️";
+        title.textContent = "Ronde 4: De AI-Architect";
+        desc.innerHTML = "Je bent nu strategisch adviseur van je organisatie of team. Verdeel je <strong>3 Energie-Munten</strong> over 5 strategische beleidsmaatregelen.<br><br>Weeg je keuzes zorgvuldig af. De statusindicatoren rechts worden pas na de evaluatie bijgewerkt!";
+      }
+      
+      showScreen('screen-rules');
+    }
+
+    function startCurrentLevel() {
+      if (state.currentLevel === 1) {
+        state.level1CurrentIndex = 0;
+        initLevel1Case();
+        showScreen('screen-l1');
+      } else if (state.currentLevel === 2) {
+        state.level2CurrentIndex = 0;
+        initLevel2Audit();
+        showScreen('screen-l2');
+      } else if (state.currentLevel === 3) {
+        initLevel3();
+        showScreen('screen-l3');
+      } else if (state.currentLevel === 4) {
+        initLevel4();
+        showScreen('screen-l4');
+      }
+    }
+
+    /* =========================================================================
+       LEVEL 1: SCANNER MECHANICS (Multi-Select Risks)
+       ========================================================================= */
+
+    function initLevel1Case() {
+      state.level1TempZone = null;
+      state.level1SelectedRisks = [];
+      document.getElementById('l1-feedback-box').classList.add('hidden');
+      document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('active-drop'));
+      
+      const currentCase = L1_CASES[state.level1CurrentIndex];
+      const container = document.getElementById('active-card-container');
+      
+      container.innerHTML = `
+        <div class="case-card" id="draggable-card" draggable="true" ondragstart="handleDragStart(event)">
+          <div class="case-card-header">
+            <span class="case-badge">Casus ${state.level1CurrentIndex + 1} van ${L1_CASES.length}</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">ID: ${currentCase.id}</span>
+          </div>
+          <h3 class="case-title" style="margin-bottom: 10px;">${currentCase.title}</h3>
+          <p class="case-text">${currentCase.text}</p>
+        </div>
+      `;
+    }
+
+    function handleDragStart(e) {
+      e.dataTransfer.setData("text/plain", e.target.id);
+    }
+
+    function allowDrag(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('dragover');
+    }
+
+    function clearDrag(e) {
+      e.currentTarget.classList.remove('dragover');
+    }
+
+    function handleDrop(e, zone) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      processZoneSelection(zone);
+    }
+
+    function selectZoneClick(zone) {
+      processZoneSelection(zone);
+    }
+
+    function processZoneSelection(zone) {
+      state.level1TempZone = zone;
+      
+      document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('active-drop'));
+      document.getElementById(`zone-${zone}`).classList.add('active-drop');
+      
+      openRiskModal();
+    }
+
+    function openRiskModal() {
+      state.level1SelectedRisks = [];
+      document.querySelectorAll('.risk-checkbox-label').forEach(lbl => {
+        lbl.classList.remove('selected');
+      });
+      
+      const modal = document.getElementById('risk-modal');
+      modal.classList.add('active');
+    }
+
+    function toggleRiskCheckbox(risk) {
+      const idx = state.level1SelectedRisks.indexOf(risk);
+      const labelEl = document.getElementById(`risk-lbl-${risk}`);
+      
+      if (idx > -1) {
+        state.level1SelectedRisks.splice(idx, 1);
+        labelEl.classList.remove('selected');
+      } else {
+        state.level1SelectedRisks.push(risk);
+        labelEl.classList.add('selected');
+      }
+    }
+
+    function confirmRiskChoice() {
+      document.getElementById('risk-modal').classList.remove('active');
+      evaluateL1Choice();
+    }
+
+    function evaluateL1Choice() {
+      const currentCase = L1_CASES[state.level1CurrentIndex];
+      const zoneChoice = state.level1TempZone;
+      const selected = state.level1SelectedRisks;
+      
+      // 1. Zone score
+      const zoneResult = currentCase.scoring[zoneChoice] || { score: 0 };
+      let ethicScore = zoneResult.ethic || 0;
+      let didactiekScore = zoneResult.didactiek || 0;
+      
+      // 2. Multi-select risks score calculation
+      let correctCount = 0;
+      let incorrectCount = 0;
+      
+      selected.forEach(risk => {
+        if (currentCase.correctRisks.includes(risk)) {
+          correctCount++;
+        } else {
+          incorrectCount++;
+        }
+      });
+      
+      // Calculation: +1 per correct, -0.5 per incorrect
+      let riskBonus = (correctCount * 1.0) - (incorrectCount * 0.5);
+      riskBonus = Math.max(0, riskBonus); // Floor to 0
+      
+      state.scores.basisEthiek += ethicScore + Math.round(riskBonus);
+      state.scores.didactiekTechniek += didactiekScore;
+      updateStatusBarHTML();
+      
+      // Log choice
+      state.choices.level1.push({
+        caseId: currentCase.id,
+        zoneChosen: zoneChoice,
+        risksChosen: [...selected],
+        score: ethicScore + didactiekScore + Math.round(riskBonus)
+      });
+      
+      const feedbackBox = document.getElementById('l1-feedback-box');
+      const feedbackTitle = document.getElementById('l1-feedback-title');
+      const feedbackText = document.getElementById('l1-feedback-text');
+      
+      feedbackBox.classList.add('hidden');
+      
+      const correctLabels = currentCase.correctRisks.map(r => getRiskLabel(r)).join(' en ');
+      
+      if (zoneChoice === currentCase.bestZone) {
+        feedbackBox.style.borderLeftColor = "var(--accent-basis)";
+        feedbackTitle.style.color = "var(--accent-basis)";
+        feedbackTitle.textContent = "Sterke scan";
+        feedbackText.innerHTML = `
+          ${currentCase.feedback.success}
+          <br><br>
+          <strong>Risico-evaluatie:</strong> Je selecteerde ${correctCount} van de ${currentCase.correctRisks.length} relevante risicofactoren correct. 
+          De primaire risicofactoren zijn: <strong>${correctLabels}</strong>.
+        `;
+      } else {
+        feedbackBox.style.borderLeftColor = "var(--accent-warning)";
+        feedbackTitle.style.color = "var(--accent-warning)";
+        feedbackTitle.textContent = "Nog even aanscherpen";
+        
+        let customFeedbackText = (zoneChoice === "unsafe" || currentCase.bestZone === "unsafe") 
+          ? currentCase.feedback.fail 
+          : currentCase.feedback.partial;
+          
+        feedbackText.innerHTML = `
+          ${customFeedbackText}
+          <br><br>
+          <strong>Risico-evaluatie:</strong> De primaire risicofactoren zijn: <strong>${correctLabels}</strong>.
+        `;
+      }
+      
+      openScanFeedbackModal(feedbackTitle.textContent, feedbackText.innerHTML, {
+        color: zoneChoice === currentCase.bestZone ? "var(--accent-basis)" : "var(--accent-warning)",
+        buttonText: (state.level1CurrentIndex + 1 < L1_CASES.length) ? "Volgende casus" : "Ronde afronden",
+        onContinue: nextL1Case
+      });
+
+      document.getElementById('draggable-card').setAttribute('draggable', 'false');
+      document.getElementById('draggable-card').style.opacity = "0.5";
+      document.getElementById('draggable-card').style.pointerEvents = "none";
+    }
+
+    let feedbackModalContinueAction = null;
+
+    function openScanFeedbackModal(title, body, options = {}) {
+      const modal = document.getElementById('scan-feedback-modal');
+      const modalTitle = document.getElementById('scan-feedback-modal-title');
+      const modalText = document.getElementById('scan-feedback-modal-text');
+      const nextButton = document.getElementById('btn-scan-feedback-next');
+
+      feedbackModalContinueAction = options.onContinue || null;
+      modalTitle.textContent = title;
+      modalTitle.style.color = options.color || "var(--accent-didactiek)";
+      modalText.innerHTML = body;
+      nextButton.textContent = options.buttonText || "Verder";
+      modal.classList.add('active');
+    }
+
+    function continueFeedbackModal() {
+      document.getElementById('scan-feedback-modal').classList.remove('active');
+      if (typeof feedbackModalContinueAction === 'function') {
+        const action = feedbackModalContinueAction;
+        feedbackModalContinueAction = null;
+        action();
+      }
+    }
+
+    function getRiskLabel(riskKey) {
+      const labels = {
+        privacy: "Persoonsgegevens & AVG",
+        bias: "Bias & Stereotypering",
+        source: "Onbetrouwbare bron / Hallucinaties",
+        fraud: "Integriteit & Plagiaat",
+        transparency: "Gebrek aan Transparantie",
+        dependency: "Afhankelijkheid & Regieverlies"
+      };
+      return labels[riskKey] || riskKey;
+    }
+
+    function nextL1Case() {
+      document.getElementById('scan-feedback-modal').classList.remove('active');
+      state.level1CurrentIndex++;
+      if (state.level1CurrentIndex < L1_CASES.length) {
+        initLevel1Case();
+      } else {
+        showLevelUp(
+          "Risico-scan voltooid",
+          "Je hebt alle risicocases geanalyseerd en gecategoriseerd. Je hebt hiermee de basisbeginselen van dataveiligheid en ethische kaders aangetoond.",
+          2
+        );
+      }
+    }
+
+    /* =========================================================================
+       LEVEL 2: PROMPT-TRAIL AUDIT (NEW LEVEL)
+       ========================================================================= */
+
+    function initLevel2Audit() {
+      document.getElementById('l2-feedback-box').classList.add('hidden');
+      document.querySelectorAll('.strategy-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        btn.disabled = false;
+      });
+      
+      const currentAudit = L2_TRAILS[state.level2CurrentIndex];
+      const chatBox = document.getElementById('audit-chat-box');
+      chatBox.innerHTML = '';
+      
+      // Render bubbles
+      currentAudit.chat.forEach(msg => {
+        const sideClass = (msg.sender === "AI") ? "chat-bubble-ai" : "chat-bubble-user";
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${sideClass}`;
+        
+        div.innerHTML = `
+          <span class="chat-sender">${msg.sender} (${(msg.sender === "AI") ? "AI" : currentAudit.participantName})</span>
+          <div class="chat-text">${msg.text}</div>
+        `;
+        chatBox.appendChild(div);
+      });
+      
+      // Scroll to bottom
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function selectStrategy(strategy) {
+      const currentAudit = L2_TRAILS[state.level2CurrentIndex];
+      
+      document.querySelectorAll('.strategy-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        btn.disabled = true; // Lock choice
+      });
+      
+      document.getElementById(`strat-${strategy}`).classList.add('selected');
+      
+      // Scoring
+      const points = currentAudit.scoring[strategy] || 0;
+      state.scores.didactiekTechniek += points;
+      updateStatusBarHTML();
+      
+      // Log choice
+      state.choices.level2.push({
+        auditId: currentAudit.id,
+        strategyChosen: strategy,
+        score: points
+      });
+      
+      // Show feedback
+      const fbBox = document.getElementById('l2-feedback-box');
+      const fbTitle = document.getElementById('l2-feedback-title');
+      const fbText = document.getElementById('l2-feedback-text');
+      
+      fbBox.classList.add('hidden');
+      
+      if (strategy === currentAudit.correctStrategy) {
+        fbBox.style.borderLeftColor = "var(--accent-didactiek)";
+        fbTitle.style.color = "var(--accent-didactiek)";
+        fbTitle.textContent = "Correct geaudit";
+        fbText.innerHTML = currentAudit.feedback;
+      } else {
+        fbBox.style.borderLeftColor = "var(--accent-warning)";
+        fbTitle.style.color = "var(--accent-warning)";
+        fbTitle.textContent = "Nog even aanscherpen";
+        fbText.innerHTML = `Niet helemaal juist. ${currentAudit.feedback}`;
+      }
+
+      const isCorrectAudit = strategy === currentAudit.correctStrategy;
+      openScanFeedbackModal(fbTitle.textContent, fbText.innerHTML, {
+        color: isCorrectAudit ? "var(--accent-didactiek)" : "var(--accent-warning)",
+        buttonText: (state.level2CurrentIndex + 1 < L2_TRAILS.length) ? "Volgende audit" : "Ronde afronden",
+        onContinue: nextL2Audit
+      });
+    }
+
+    function nextL2Audit() {
+      state.level2CurrentIndex++;
+      if (state.level2CurrentIndex < L2_TRAILS.length) {
+        initLevel2Audit();
+      } else {
+        showLevelUp(
+          "Prompt-audit voltooid",
+          "Uitstekend werk. Je kunt interacties met AI nu accuraat analyseren op actieve versus passieve werkstrategieen.",
+          3
+        );
+      }
+    }
+
+    /* =========================================================================
+       LEVEL 3: DE AI-WERKPLAATS
+       ========================================================================= */
+
+    function initLevel3() {
+      document.getElementById('l3-feedback-box').classList.add('hidden');
+      document.getElementById('btn-run-workshop').disabled = true;
+      state.choices.level3 = { tool: null, prompt: null, didactiek: null };
+      
+      renderL3Column('deck-tools', L3_CARDS.tools, 'tool');
+      renderL3Column('deck-prompts', L3_CARDS.prompts, 'prompt');
+      renderL3Column('deck-didactics', L3_CARDS.didactics, 'didactiek');
+      
+      updateL3RecipePreview();
+    }
+
+    function renderL3Column(elementId, cardsList, type) {
+      const container = document.getElementById(elementId);
+      container.innerHTML = '';
+      
+      cardsList.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'selectable-card';
+        div.id = `card-${card.id}`;
+        div.onclick = () => selectL3Card(card.id, type);
+        
+        div.innerHTML = `
+          <div class="selectable-card-title">${card.label}</div>
+          <div class="selectable-card-desc">${card.desc}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function selectL3Card(cardId, type) {
+      if (!document.getElementById('l3-feedback-box').classList.contains('hidden')) return;
+
+      const cardList = (type === 'tool') ? L3_CARDS.tools : (type === 'prompt') ? L3_CARDS.prompts : L3_CARDS.didactics;
+      
+      cardList.forEach(c => {
+        const el = document.getElementById(`card-${c.id}`);
+        if (el) el.classList.remove('selected');
+      });
+      
+      document.getElementById(`card-${cardId}`).classList.add('selected');
+      state.choices.level3[type] = cardId;
+      
+      updateL3RecipePreview();
+      
+      if (state.choices.level3.tool && state.choices.level3.prompt && state.choices.level3.didactiek) {
+        document.getElementById('btn-run-workshop').disabled = false;
+      }
+    }
+
+    function updateL3RecipePreview() {
+      const toolSlot = document.getElementById('slot-tool');
+      const promptSlot = document.getElementById('slot-prompt');
+      const didSlot = document.getElementById('slot-didactiek');
+      
+      if (state.choices.level3.tool) {
+        const t = L3_CARDS.tools.find(c => c.id === state.choices.level3.tool);
+        toolSlot.textContent = t.label;
+        toolSlot.classList.add('active');
+      } else {
+        toolSlot.textContent = "Geen Tool geselecteerd";
+        toolSlot.classList.remove('active');
+      }
+      
+      if (state.choices.level3.prompt) {
+        const p = L3_CARDS.prompts.find(c => c.id === state.choices.level3.prompt);
+        promptSlot.textContent = p.label;
+        promptSlot.classList.add('active');
+      } else {
+        promptSlot.textContent = "Geen Prompt geselecteerd";
+        promptSlot.classList.remove('active');
+      }
+      
+      if (state.choices.level3.didactiek) {
+        const d = L3_CARDS.didactics.find(c => c.id === state.choices.level3.didactiek);
+        didSlot.textContent = d.label;
+        didSlot.classList.add('active');
+      } else {
+        didSlot.textContent = "Geen verwerking geselecteerd";
+        didSlot.classList.remove('active');
+      }
+    }
+
+    function evaluateRecipe() {
+      const choices = state.choices.level3;
+      const toolCard = L3_CARDS.tools.find(c => c.id === choices.tool);
+      const promptCard = L3_CARDS.prompts.find(c => c.id === choices.prompt);
+      const didCard = L3_CARDS.didactics.find(c => c.id === choices.didactiek);
+      
+      let didactiekScore = toolCard.scores.didactiekTechniek + promptCard.scores.didactiekTechniek + didCard.scores.didactiekTechniek;
+      let ethicScore = toolCard.scores.basisEthiek + promptCard.scores.basisEthiek + didCard.scores.basisEthiek;
+      
+      const comboKey = `${choices.tool}_${choices.prompt}_${choices.didactiek}`;
+      const predefined = L3_RECIPES[comboKey];
+      
+      let title = "AI-Workflow Samengesteld";
+      let body = "Je AI-recept is beoordeeld op veiligheid, kwaliteit en actieve verwerking.";
+      let borderCol = "var(--accent-didactiek)";
+      
+      if (predefined) {
+        title = predefined.title;
+        body = predefined.text;
+        didactiekScore += predefined.bonus.didactiekTechniek;
+        ethicScore += predefined.bonus.basisEthiek;
+        
+        if (predefined.rating === 'excellent') borderCol = "var(--accent-basis)";
+        if (predefined.rating === 'poor') borderCol = "var(--accent-danger)";
+        if (predefined.rating === 'risky') borderCol = "var(--accent-warning)";
+      } else {
+        // Dynamic feedback based on scoring trends
+        if (didactiekScore >= 4) {
+          title = "Goed Doordacht Recept!";
+          body = "Een sterke combinatie. De gebruiker blijft actief betrokken en privacy is redelijk gewaarborgd. Dit is een bruikbare opzet.";
+        } else if (didactiekScore < 1) {
+          title = "Zwak AI-Recept";
+          borderCol = "var(--accent-warning)";
+          body = "Pas op: dit recept mist actieve verwerking. De gebruiker besteedt hierdoor te makkelijk kritische denkstappen direct uit aan de AI.";
+        } else {
+          title = "Voldoende Integratie";
+          body = "Dit recept is bruikbaar, maar mist diepgang. Overweeg een criteria-prompt of expliciete reviewstap toe te voegen om de kwaliteit te verhogen.";
+        }
+      }
+      
+      state.scores.didactiekTechniek += Math.max(0, didactiekScore);
+      state.scores.basisEthiek += Math.max(0, ethicScore);
+      updateStatusBarHTML();
+      
+      const fbBox = document.getElementById('l3-feedback-box');
+      const fbTitle = document.getElementById('l3-feedback-title');
+      const fbText = document.getElementById('l3-feedback-text');
+      
+      fbBox.classList.add('hidden');
+      fbBox.style.borderLeftColor = borderCol;
+      fbTitle.textContent = title;
+      fbTitle.style.color = borderCol;
+      fbText.innerHTML = body;
+
+      openScanFeedbackModal(title, body, {
+        color: borderCol,
+        buttonText: "Door naar ronde 4",
+        onContinue: () => goToRules(4)
+      });
+      
+      document.getElementById('btn-run-workshop').disabled = true;
+    }
+
+    /* =========================================================================
+       LEVEL 4: DE AI-ARCHITECT
+       ========================================================================= */
+
+    function initLevel4() {
+      document.getElementById('l4-feedback-box').classList.add('hidden');
+      document.getElementById('btn-submit-architect').disabled = true;
+      state.l4AssignedCoins = [null, null, null];
+      
+      // Base values are 50%
+      updateL4MetersUI(50, 50, 50);
+      renderL4Policies();
+      updateL4CoinsUI();
+    }
+
+    function renderL4Policies() {
+      const container = document.getElementById('policies-deck');
+      container.innerHTML = '';
+      
+      L4_POLICIES.forEach(policy => {
+        const div = document.createElement('div');
+        div.className = 'policy-card';
+        div.id = `policy-${policy.id}`;
+        
+        const assignedCoinIndexes = [];
+        state.l4AssignedCoins.forEach((assignedId, coinIdx) => {
+          if (assignedId === policy.id) {
+            assignedCoinIndexes.push(coinIdx + 1);
+          }
+        });
+        
+        let tokenSlotsHTML = '';
+        for (let i = 0; i < 2; i++) {
+          const coinAtSlot = assignedCoinIndexes[i];
+          if (coinAtSlot) {
+            tokenSlotsHTML += `<div class="token-slot filled" onclick="removeCoinFromPolicy('${policy.id}', ${coinAtSlot})">⚡</div>`;
+          } else {
+            tokenSlotsHTML += `<div class="token-slot" onclick="addCoinToPolicy('${policy.id}')">+</div>`;
+          }
+        }
+        
+        div.innerHTML = `
+          <div class="policy-header">
+            <div class="policy-title">${policy.title}</div>
+            <div class="token-slot-container">
+              ${tokenSlotsHTML}
+            </div>
+          </div>
+          <div class="policy-desc">${policy.desc}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addCoinToPolicy(policyId) {
+      const freeCoinIndex = state.l4AssignedCoins.indexOf(null);
+      if (freeCoinIndex === -1) return;
+      
+      state.l4AssignedCoins[freeCoinIndex] = policyId;
+      
+      renderL4Policies();
+      updateL4CoinsUI();
+      checkL4Completion();
+    }
+
+    function removeCoinFromPolicy(policyId, coinNum) {
+      state.l4AssignedCoins[coinNum - 1] = null;
+      
+      renderL4Policies();
+      updateL4CoinsUI();
+      checkL4Completion();
+    }
+
+    function recallCoin(coinNum) {
+      if (state.l4AssignedCoins[coinNum - 1] !== null) {
+        state.l4AssignedCoins[coinNum - 1] = null;
+        renderL4Policies();
+        updateL4CoinsUI();
+        checkL4Completion();
+      }
+    }
+
+    function updateL4CoinsUI() {
+      for (let i = 1; i <= 3; i++) {
+        const coinEl = document.getElementById(`coin-${i}`);
+        if (state.l4AssignedCoins[i - 1] !== null) {
+          coinEl.classList.add('spent');
+        } else {
+          coinEl.classList.remove('spent');
+        }
+      }
+    }
+
+    function checkL4Completion() {
+      const freeCoinIndex = state.l4AssignedCoins.indexOf(null);
+      document.getElementById('btn-submit-architect').disabled = (freeCoinIndex !== -1);
+    }
+
+    function updateL4MetersUI(culture, safety, innovation) {
+      document.getElementById('meter-culture-val').textContent = `${culture}%`;
+      document.getElementById('meter-culture-fill').style.width = `${culture}%`;
+      
+      document.getElementById('meter-safety-val').textContent = `${safety}%`;
+      document.getElementById('meter-safety-fill').style.width = `${safety}%`;
+      
+      document.getElementById('meter-innovation-val').textContent = `${innovation}%`;
+      document.getElementById('meter-innovation-fill').style.width = `${innovation}%`;
+    }
+
+    function evaluateArchitect() {
+      let visieScore = 0;
+      let didactiekScore = 0;
+      let ethicScore = 0;
+      
+      // Calculate meter effects
+      let culture = 50;
+      let safety = 50;
+      let innovation = 50;
+      
+      const detailsList = [];
+      
+      state.l4AssignedCoins.forEach(policyId => {
+        if (policyId) {
+          const policy = L4_POLICIES.find(p => p.id === policyId);
+          if (policy) {
+            visieScore += policy.scores.visieBeleid;
+            didactiekScore += policy.scores.didactiekTechniek;
+            ethicScore += policy.scores.basisEthiek;
+            
+            culture += policy.metrics.culture;
+            safety += policy.metrics.safety;
+            innovation += policy.metrics.innovation;
+            
+            detailsList.push(`<li><strong>${policy.title}:</strong> ${policy.feedback}</li>`);
+          }
+        }
+      });
+      
+      // Apply scores
+      state.scores.visieBeleid += visieScore;
+      state.scores.didactiekTechniek += didactiekScore;
+      state.scores.basisEthiek += ethicScore;
+      updateStatusBarHTML();
+      
+      // Boundaries
+      culture = Math.min(100, Math.max(0, culture));
+      safety = Math.min(100, Math.max(0, safety));
+      innovation = Math.min(100, Math.max(0, innovation));
+      
+      // Update sidebar meters *AFTER* evaluation clicks (satisfying user request)
+      updateL4MetersUI(culture, safety, innovation);
+      
+      // Log choice
+      state.choices.level4 = [...state.l4AssignedCoins];
+      
+      // Evaluate balance
+      let balanceFeedback = "";
+      if (safety > 75 && innovation > 70) {
+        balanceFeedback = "<strong>Uitstekende Organisatiebalans!</strong> Je hebt zowel ingezet op praktische innovatie als op solide veiligheid en kwaliteitsborging. Dit typeert een visionaire architect.";
+      } else if (safety > 80 && innovation < 55) {
+        balanceFeedback = "<strong>Risicomijdende Organisatie.</strong> Je hebt sterk ingezet op veiligheid en regels, maar de innovatie staat nagenoeg stil. Pas op voor weerstand of afhaken in het team.";
+      } else if (innovation > 80 && safety < 55) {
+        balanceFeedback = "<strong>Innovatie-Wildwest.</strong> De organisatie bruist van vernieuwing, maar loopt grote risico's op het gebied van dataveiligheid, betrouwbaarheid en AVG. Borging is dringend noodzakelijk.";
+      } else {
+        balanceFeedback = "<strong>Gebalanceerde transitie.</strong> Je hebt een redelijk stabiele route gekozen. Er zijn geen kritieke indicatoren, al kan een extra impuls op professionalisering geen kwaad.";
+      }
+      
+      const fbBox = document.getElementById('l4-feedback-box');
+      const fbTitle = document.getElementById('l4-feedback-title');
+      const fbText = document.getElementById('l4-feedback-text');
+      
+      fbBox.classList.add('hidden');
+      fbTitle.textContent = "Keuzes geevalueerd";
+      fbTitle.style.color = "var(--accent-visie)";
+      fbBox.style.borderLeftColor = "var(--accent-visie)";
+      
+      fbText.innerHTML = `
+        ${balanceFeedback}
+        <br><br>
+        <strong>Impact van je keuzes:</strong>
+        <ul style="margin-left: 20px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+          ${detailsList.join('')}
+        </ul>
+      `;
+
+      openScanFeedbackModal(fbTitle.textContent, fbText.innerHTML, {
+        color: "var(--accent-visie)",
+        buttonText: "Toon scanrapport",
+        onContinue: showFinalResults
+      });
+      
+      document.querySelectorAll('.token-slot').forEach(el => el.style.pointerEvents = 'none');
+      document.getElementById('btn-submit-architect').disabled = true;
+    }
+
+    /* =========================================================================
+       LEVEL UP TRANSITIONS
+       ========================================================================= */
+
+    let nextTargetScreen = '';
+    function showLevelUp(title, description, nextLevel) {
+      document.getElementById('levelup-title').textContent = title;
+      document.getElementById('levelup-desc').textContent = description;
+      
+      if (nextLevel === 2) {
+        document.getElementById('levelup-tag').textContent = "Ronde 1 voltooid";
+        nextTargetScreen = () => goToRules(2);
+      } else if (nextLevel === 3) {
+        document.getElementById('levelup-tag').textContent = "Ronde 2 voltooid";
+        nextTargetScreen = () => goToRules(3);
+      } else if (nextLevel === 4) {
+        document.getElementById('levelup-tag').textContent = "Ronde 3 voltooid";
+        nextTargetScreen = () => goToRules(4);
+      }
+      
+      showScreen('screen-levelup');
+    }
+
+    function continueToNextScreen() {
+      if (typeof nextTargetScreen === 'function') {
+        nextTargetScreen();
+      }
+    }
+
+    /* =========================================================================
+       RESULTS ENGINE (CHART.JS)
+       ========================================================================= */
+
+    let chartInstance = null;
+
+    function buildEvidenceSignals() {
+      const signals = new Set();
+      const addSignal = (signal) => {
+        if (signal) signals.add(signal);
+      };
+
+      let correctZoneCount = 0;
+
+      state.choices.level1.forEach(choice => {
+        const currentCase = L1_CASES.find(c => c.id === choice.caseId);
+        if (!currentCase) return;
+
+        const selectedRisks = choice.risksChosen || [];
+        if (selectedRisks.length > 0) addSignal("l1_risk_any");
+
+        if (choice.zoneChosen === currentCase.bestZone) {
+          correctZoneCount++;
+          addSignal("l1_correct_zone");
+          addSignal(`l1_zone_${currentCase.id}`);
+        }
+
+        selectedRisks.forEach(risk => {
+          if (currentCase.correctRisks.includes(risk)) {
+            addSignal("risk_correct");
+            addSignal(`risk_${risk}`);
+          }
+        });
+      });
+
+      if (correctZoneCount >= 3) addSignal("l1_most_zones");
+      if (correctZoneCount === L1_CASES.length) addSignal("l1_all_zones");
+
+      let correctAuditCount = 0;
+      state.choices.level2.forEach(choice => {
+        const currentAudit = L2_TRAILS.find(a => a.id === choice.auditId);
+        if (!currentAudit) return;
+
+        if (choice.strategyChosen === currentAudit.correctStrategy) {
+          correctAuditCount++;
+          addSignal("l2_correct_audit");
+          addSignal(`l2_correct_${currentAudit.id}`);
+        }
+      });
+
+      if (correctAuditCount >= 2) addSignal("l2_most_audits");
+      if (correctAuditCount === L2_TRAILS.length) addSignal("l2_all_audits");
+
+      const l3Choices = state.choices.level3 || {};
+      if (l3Choices.tool || l3Choices.prompt || l3Choices.didactiek) {
+        addSignal("l3_any_workflow");
+      }
+
+      if (l3Choices.tool === "inst_ai") addSignal("secure_tool");
+      if (l3Choices.tool === "translation_tool") addSignal("specialized_tool");
+      if (l3Choices.prompt === "rubric_prompt") {
+        addSignal("criteria_prompt");
+        addSignal("context_prompt");
+      }
+      if (l3Choices.prompt === "structured_prompt") addSignal("context_prompt");
+      if (l3Choices.didactiek === "critical_eval" || l3Choices.didactiek === "peer_review") {
+        addSignal("human_review");
+      }
+      if (
+        l3Choices.tool === "inst_ai" &&
+        l3Choices.prompt === "rubric_prompt" &&
+        l3Choices.didactiek === "critical_eval"
+      ) {
+        addSignal("strong_workflow");
+      }
+
+      const selectedPolicies = new Set((state.choices.level4 || []).filter(Boolean));
+      if (selectedPolicies.size > 0) addSignal("l4_any_policy");
+      if (selectedPolicies.has("workshop")) addSignal("policy_awareness");
+      if (selectedPolicies.has("curriculum")) addSignal("policy_learning");
+      if (selectedPolicies.has("guideline")) addSignal("policy_guideline");
+      if (selectedPolicies.has("co_creation")) addSignal("policy_cocreation");
+
+      return signals;
+    }
+
+    function getCriterionStatus(criterion, signals) {
+      const directMatch = (criterion.signals || []).some(signal => signals.has(signal));
+      if (directMatch) return "shown";
+
+      const partialMatch = (criterion.partialSignals || []).some(signal => signals.has(signal));
+      if (partialMatch) return "partial";
+
+      if (criterion.notTested) return "notTested";
+      return "notShown";
+    }
+
+    function buildCriterionEvaluation(signals) {
+      const criteria = [];
+
+      COMPETENCY_GUIDE.forEach(level => {
+        level.criteria.forEach(criterion => {
+          criteria.push({
+            ...criterion,
+            level: level.level,
+            status: getCriterionStatus(criterion, signals)
+          });
+        });
+      });
+
+      return { signals, criteria };
+    }
+
+    function getDimensionSummaries(criteria) {
+      return DIMENSIONS.map(dimension => {
+        const dimensionCriteria = criteria.filter(criterion => criterion.dimension === dimension.key);
+        const shown = dimensionCriteria.filter(criterion => criterion.status === "shown").length;
+        const partial = dimensionCriteria.filter(criterion => criterion.status === "partial").length;
+        const notShown = dimensionCriteria.filter(criterion => criterion.status === "notShown").length;
+        const notTested = dimensionCriteria.filter(criterion => criterion.status === "notTested").length;
+        const assessed = Math.max(1, dimensionCriteria.length - notTested);
+        const percent = Math.round(((shown + (partial * 0.5)) / assessed) * 100);
+
+        return {
+          ...dimension,
+          shown,
+          partial,
+          notShown,
+          notTested,
+          total: dimensionCriteria.length,
+          percent: Math.min(100, percent)
+        };
+      });
+    }
+
+    function renderStatusPill(status) {
+      const meta = STATUS_META[status] || STATUS_META.notTested;
+      return `<span class="status-pill ${meta.className}"><span>${meta.icon}</span>${meta.label}</span>`;
+    }
+
+    function getCriterionEvidenceText(status) {
+      if (status === "shown") return "Zichtbaar in je keuzes tijdens deze scan.";
+      if (status === "partial") return "Er waren signalen, maar nog geen volledig bewijs.";
+      if (status === "notShown") return "Dit kwam aan bod, maar werd niet overtuigend zichtbaar.";
+      return "Deze compacte scan vraagt dit niet expliciet uit.";
+    }
+
+    function renderEvidenceSummary(summaries) {
+      const grid = document.getElementById('evidence-summary-grid');
+      grid.innerHTML = summaries.map(summary => `
+        <div class="evidence-tile" style="border-left-color: ${summary.color};">
+          <div class="evidence-label">${summary.label}</div>
+          <div class="evidence-value" style="color: ${summary.color};">${summary.percent}%</div>
+          <div class="evidence-detail">
+            ${summary.shown} aangetoond, ${summary.partial} deels, ${summary.notShown} nog niet zichtbaar, ${summary.notTested} niet getoetst.
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCriteriaGuide(evaluation) {
+      const legend = document.getElementById('criteria-legend');
+      legend.innerHTML = Object.keys(STATUS_META).map(status => renderStatusPill(status)).join('');
+
+      const guide = document.getElementById('criteria-guide');
+      guide.innerHTML = COMPETENCY_GUIDE.map(level => {
+        const levelCriteria = evaluation.criteria.filter(criterion => criterion.level === level.level);
+        const shown = levelCriteria.filter(criterion => criterion.status === "shown").length;
+        const partial = levelCriteria.filter(criterion => criterion.status === "partial").length;
+        const notTested = levelCriteria.filter(criterion => criterion.status === "notTested").length;
+
+        const dimensionBlocks = DIMENSIONS.map(dimension => {
+          const criteria = levelCriteria.filter(criterion => criterion.dimension === dimension.key);
+          if (criteria.length === 0) return "";
+
+          return `
+            <div class="dimension-group">
+              <div class="dimension-title">
+                <span class="dimension-dot" style="background: ${dimension.color};"></span>
+                ${dimension.label}
+              </div>
+              <div class="criteria-list">
+                ${criteria.map(criterion => `
+                  <div class="criterion-row">
+                    <div>${renderStatusPill(criterion.status)}</div>
+                    <div>
+                      <div class="criterion-text">${criterion.text}</div>
+                      <div class="criterion-evidence">${getCriterionEvidenceText(criterion.status)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="criteria-level-card">
+            <div class="criteria-level-header">
+              <div>
+                <h4>${level.title}</h4>
+                <p>${level.subtitle}</p>
+              </div>
+              <div class="criteria-level-score">
+                <strong>${shown} aangetoond</strong>
+                ${partial} deels zichtbaar<br>
+                ${notTested} niet direct getoetst
+              </div>
+            </div>
+            ${dimensionBlocks}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getZoneLabel(zone) {
+      const labels = {
+        safe: "Veilig inzetten",
+        adapt: "Eerst aanpassen",
+        unsafe: "Niet verantwoord"
+      };
+      return labels[zone] || zone;
+    }
+
+    function getStrategyLabel(strategy) {
+      const labels = {
+        coping: "Oppervlakkig copinggedrag",
+        sparring: "Actieve sparringpartner",
+        bypassing: "Ontwijkend bypassinggedrag"
+      };
+      return labels[strategy] || strategy;
+    }
+
+    function buildReflectionItems() {
+      const items = [];
+
+      state.choices.level1.forEach(choice => {
+        const currentCase = L1_CASES.find(c => c.id === choice.caseId);
+        if (!currentCase) return;
+
+        const selectedRisks = choice.risksChosen || [];
+        const missedRisks = currentCase.correctRisks.filter(risk => !selectedRisks.includes(risk));
+        const zoneWasOff = choice.zoneChosen !== currentCase.bestZone;
+
+        if (zoneWasOff || missedRisks.length > 0) {
+          const missedText = missedRisks.length > 0
+            ? ` Let vooral op: ${missedRisks.map(getRiskLabel).join(', ')}.`
+            : "";
+          items.push({
+            title: currentCase.title,
+            text: `Sterker was: ${getZoneLabel(currentCase.bestZone)}.${missedText}`
+          });
+        }
+      });
+
+      state.choices.level2.forEach(choice => {
+        const currentAudit = L2_TRAILS.find(a => a.id === choice.auditId);
+        if (!currentAudit || choice.strategyChosen === currentAudit.correctStrategy) return;
+
+        items.push({
+          title: `Prompt-trail van ${currentAudit.participantName}`,
+          text: `De betere audit was: ${getStrategyLabel(currentAudit.correctStrategy)}. Kijk scherper naar regie, broncontrole en menselijke verantwoordelijkheid.`
+        });
+      });
+
+      const l3Choices = state.choices.level3 || {};
+      if (l3Choices.tool && l3Choices.tool !== "inst_ai" && l3Choices.tool !== "translation_tool") {
+        items.push({
+          title: "AI-werkplaats: toolkeuze",
+          text: "Een afgeschermde of taakgerichte tool had sterker bewijs gegeven voor privacy, geschiktheid en verantwoord gebruik."
+        });
+      }
+      if (l3Choices.prompt && l3Choices.prompt !== "rubric_prompt" && l3Choices.prompt !== "structured_prompt") {
+        items.push({
+          title: "AI-werkplaats: promptkwaliteit",
+          text: "Een prompt met doel, context, criteria en randvoorwaarden had meer kwaliteit en controle zichtbaar gemaakt."
+        });
+      }
+      if (l3Choices.didactiek && l3Choices.didactiek !== "critical_eval" && l3Choices.didactiek !== "peer_review") {
+        items.push({
+          title: "AI-werkplaats: verwerking",
+          text: "Een expliciete reviewstap had beter laten zien dat de gebruiker eindverantwoordelijkheid houdt."
+        });
+      }
+
+      const selectedPolicies = new Set((state.choices.level4 || []).filter(Boolean));
+      if (selectedPolicies.has("mandate")) {
+        items.push({
+          title: "AI-architect: verplicht gebruik",
+          text: "Een verplichting per proces is te grof. Sterker is beleid dat per taak afweegt of AI waarde toevoegt en welke risico's geborgd zijn."
+        });
+      }
+      if (selectedPolicies.size > 0 && !selectedPolicies.has("guideline")) {
+        items.push({
+          title: "AI-architect: kaders",
+          text: "Heldere AVG-, transparantie- en controleafspraken hadden het bewijs voor wet en beleid sterker gemaakt."
+        });
+      }
+      if (selectedPolicies.size > 0 && !selectedPolicies.has("curriculum") && !selectedPolicies.has("co_creation")) {
+        items.push({
+          title: "AI-architect: borging",
+          text: "Een leerlijn of co-creatieaanpak had sterker laten zien hoe inzichten duurzaam in teamontwikkeling landen."
+        });
+      }
+
+      if (items.length === 0) {
+        items.push({
+          title: "Volgende verdieping",
+          text: "Je keuzes sloten goed aan op de scan. De volgende stap is explicieter bewijs verzamelen voor de criteria die deze compacte scan niet direct toetst."
+        });
+      }
+
+      return items.slice(0, 6);
+    }
+
+    function renderReflectionItems() {
+      const list = document.getElementById('final-reflection-list');
+      const items = buildReflectionItems();
+
+      list.innerHTML = items.map(item => `
+        <div class="reflection-item">
+          <strong>${item.title}</strong>
+          ${item.text}
+        </div>
+      `).join('');
+    }
+
+    function showFinalResults() {
+      showScreen('screen-results');
+      
+      const scores = state.scores;
+      const evidenceSignals = buildEvidenceSignals();
+      const criterionEvaluation = buildCriterionEvaluation(evidenceSignals);
+      const dimensionSummaries = getDimensionSummaries(criterionEvaluation.criteria);
+      
+      const profileName = document.getElementById('final-profile-name');
+      const profileText = document.getElementById('final-profile-feedback');
+      const profileGoal = document.getElementById('final-profile-goal');
+      const scopeNote = document.getElementById('scan-scope-note');
+      
+      let maxScoreKey = 'basisEthiek';
+      if (scores.didactiekTechniek > scores[maxScoreKey]) maxScoreKey = 'didactiekTechniek';
+      if (scores.visieBeleid > scores[maxScoreKey]) maxScoreKey = 'visieBeleid';
+      
+      let minScoreKey = 'basisEthiek';
+      if (scores.didactiekTechniek < scores[minScoreKey]) minScoreKey = 'didactiekTechniek';
+      if (scores.visieBeleid < scores[minScoreKey]) minScoreKey = 'visieBeleid';
+
+      const totalScore = scores.basisEthiek + scores.didactiekTechniek + scores.visieBeleid;
+      const level =
+        totalScore >= 34 ? 3 :
+        totalScore >= 20 ? 2 : 1;
+
+      const levelAdvice = {
+        1: {
+          mastery: "Je scanresultaat past bij kenmerken van niveau 1: je herkent basisrisico's en kunt eenvoudige AI-toepassingen beoordelen.",
+          next: "Werk toe naar niveau 2 door AI niet alleen te herkennen als kans of risico, maar bewust in kleine werkstappen toe te passen.",
+          practice: "Oefen met een vaste mini-check: wat voer ik in, wat verwacht ik terug, hoe controleer ik de output en wat deel ik wel of niet?",
+          deepen: "Verdiep je in basisprincipes zoals dataminimalisatie, broncontrole, hallucinaties en transparant vermelden wanneer AI heeft meegedacht.",
+          role: "Niveau 1 is geen certificering. Controleer hieronder welke gidscriteria al zichtbaar zijn en welke nog niet direct zijn aangetoond."
+        },
+        2: {
+          mastery: "Je scanresultaat past bij kenmerken van niveau 2: je gebruikt AI bewuster en kunt veelvoorkomende risico's in werkprocessen benoemen.",
+          next: "Werk toe naar niveau 3 als je in je rol anderen begeleidt, werkprocessen ontwerpt of AI-gebruik binnen een team helpt verbeteren.",
+          practice: "Oefen met herhaalbare promptrecepten: doel, context, criteria, beperkingen en een expliciete reviewstap. Leg vast wat wel en niet werkte.",
+          deepen: "Verdiep je in kwaliteitscontrole, bias, bronverificatie, menselijke review en het vertalen van individuele werkwijzen naar gedeelde afspraken.",
+          role: "Niveau 2 is een indicatie op basis van deze korte scan. Gebruik de criterialijst hieronder om te zien welke onderdelen nog ontbreken."
+        },
+        3: {
+          mastery: "Je scanresultaat past bij kenmerken van niveau 3: je kunt AI-gebruik verantwoord vormgeven en anderen helpen met keuzes, afspraken en borging.",
+          next: "Blijf niveau 3 onderhouden door jouw aanpak te vertalen naar duidelijke kaders, voorbeelden en evaluatiemomenten voor anderen.",
+          practice: "Oefen met het begeleiden van collega's: laat zien hoe je risico's afweegt, hoe je prompts verbetert en hoe je besluit wanneer AI wel of niet passend is.",
+          deepen: "Verdiep je in nieuwe regelgeving, datagovernance, impactevaluatie, inkoopvoorwaarden en monitoring van AI-toepassingen.",
+          role: "Niveau 3 vraagt in de praktijk extra bewijs buiten deze scan, vooral rond begeleiding, beleid, implementatie en rolmodelgedrag."
+        }
+      };
+
+      const focusAdvice = {
+        basisEthiek: "Let nog op privacy, transparantie, bias en de betrouwbaarheid van AI-output. Verdiep je vooral in AVG, dataminimalisatie en broncontrole.",
+        didactiekTechniek: "Let nog op de kwaliteit van prompts en de actieve verwerking van AI-output. Verdiep je in promptpatronen, reviewstappen en goede workflow-ontwerpen.",
+        visieBeleid: "Let nog op borging in teamafspraken en beleid. Verdiep je in governance, rollen, kwaliteitscriteria en het maken van gedeelde AI-richtlijnen."
+      };
+
+      const focusAction = {
+        basisEthiek: "Maak bij je volgende AI-taak vooraf expliciet welke gegevens je mag invoeren en welke bron- of biascheck je achteraf uitvoert.",
+        didactiekTechniek: "Maak een eigen promptsjabloon met doel, context, criteria en controle-opdracht, en vergelijk de uitkomst met je oorspronkelijke verwachting.",
+        visieBeleid: "Bespreek met je team een concreet voorbeeld: wat vinden jullie veilig, wanneer melden jullie AI-gebruik en wie controleert de output?"
+      };
+
+      if (maxScoreKey === 'basisEthiek') {
+        profileName.textContent = `Niveau ${level} - De AI-Risicospotter`;
+        profileName.style.color = "var(--accent-basis)";
+        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jouw kracht ligt in het bewaken van fundamentele kaders. Je bent scherp op privacy, ethiek, bias en betrouwbaarheid. ${focusAdvice[minScoreKey]}`;
+      } else if (maxScoreKey === 'didactiekTechniek') {
+        profileName.textContent = `Niveau ${level} - De AI-Workflow Ontwerper`;
+        profileName.style.color = "var(--accent-didactiek)";
+        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jouw kracht ligt in het praktisch toepassen van AI. Je ontwerpt bruikbare prompts en workflows waarin de gebruiker actief blijft nadenken. ${focusAdvice[minScoreKey]}`;
+      } else {
+        profileName.textContent = `Niveau ${level} - De AI-Richtinggever`;
+        profileName.style.color = "var(--accent-visie)";
+        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jij overziet het grotere geheel. Je denkt in afspraken, borging, rollen en duurzame invoering. ${focusAdvice[minScoreKey]}`;
+      }
+
+      profileGoal.innerHTML = `
+        <div class="growth-advice">
+          <div><strong>Volgende stap:</strong> ${levelAdvice[level].next}</div>
+          <div><strong>Oefenactie:</strong> ${levelAdvice[level].practice}</div>
+          <div><strong>Verdieping:</strong> ${levelAdvice[level].deepen}</div>
+          <div><strong>Focuspunt voor jou:</strong> ${focusAction[minScoreKey]}</div>
+          <div><strong>Rolcheck:</strong> ${levelAdvice[level].role}</div>
+        </div>
+      `;
+
+      scopeNote.innerHTML = `
+        <strong>Bereik van deze scan:</strong> deze scan raakt niveau 1, niveau 2 en enkele strategische signalen van niveau 3, maar omvat niet alle criteria als harde toets. Het adviesniveau is daarom een ontwikkelindicatie. De criterialijst hieronder laat zien welke onderdelen in je antwoorden zichtbaar werden, deels zichtbaar waren, nog niet zichtbaar waren of niet expliciet zijn uitgevraagd.
+      `;
+
+      renderEvidenceSummary(dimensionSummaries);
+      renderReflectionItems();
+      renderCriteriaGuide(criterionEvaluation);
+
+      const ctx = document.getElementById('competenceChart').getContext('2d');
+      
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+      
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dimensionSummaries.map(summary => summary.label),
+          datasets: [{
+            label: 'Zichtbaar bewijs binnen getoetste criteria',
+            data: dimensionSummaries.map(summary => summary.percent),
+            backgroundColor: dimensionSummaries.map(summary => `${summary.color}88`),
+            borderColor: dimensionSummaries.map(summary => summary.color),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#b9d8ff',
+                callback: value => `${value}%`
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(255, 255, 255, 0.05)'
+              },
+              ticks: {
+                color: '#e4f1ff',
+                font: {
+                  family: 'Outfit',
+                  size: 12,
+                  weight: '600'
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: context => `${context.raw}% zichtbaar binnen getoetste criteria`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* =========================================================================
+       SUBMIT DATA TO GOOGLE SHEET
+       ========================================================================= */
+
+    function submitAssessment() {
+      const anonIdInput = document.getElementById('input-anon-id').value.trim();
+      const statusMsg = document.getElementById('submit-status-msg');
+      const submitBtn = document.getElementById('btn-submit-data');
+      
+      const anonymousId = anonIdInput || "ANON-COL-" + Math.floor(1000 + Math.random() * 9000);
+      
+      if (APPS_SCRIPT_URL === "JOUW_GOOGLE_APPS_SCRIPT_URL_HIER") {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-warning)";
+        statusMsg.innerHTML = "Koppeling mislukt: Er is nog geen Google Apps Script URL ingesteld in de code.<br><small style='color: var(--text-muted);'>Resultaat-data: " + JSON.stringify(state.scores) + "</small>";
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Verzenden...";
+      
+      const payload = {
+        anonymousId: anonymousId,
+        timestamp: new Date().toISOString(),
+        basisEthiek: state.scores.basisEthiek,
+        didactiekTechniek: state.scores.didactiekTechniek,
+        visieBeleid: state.scores.visieBeleid,
+        totalScore: state.scores.basisEthiek + state.scores.didactiekTechniek + state.scores.visieBeleid,
+        levelDetails: JSON.stringify({
+          level1: state.choices.level1,
+          level2: state.choices.level2,
+          level3: state.choices.level3,
+          level4: state.choices.level4
+        })
+      };
+      
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-basis)";
+        statusMsg.textContent = "Je scanresultaten zijn succesvol verwerkt en opgeslagen in de Google Sheet!";
+        submitBtn.textContent = "Resultaten Opgeslagen";
+      })
+      .catch(err => {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-danger)";
+        statusMsg.innerHTML = "❌ Verzenden mislukt door een netwerkfout. Kopieer je scores handmatig:<br><code>" + JSON.stringify(state.scores) + "</code>";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Opnieuw Proberen";
+      });
+    }
+
+    function restartGame() {
+      state.scores = { basisEthiek: 0, didactiekTechniek: 0, visieBeleid: 0 };
+      state.choices = { level1: [], level2: [], level3: null, level4: [] };
+      state.level1CurrentIndex = 0;
+      state.level2CurrentIndex = 0;
+      state.currentLevel = 1;
+      state.l4AssignedCoins = [null, null, null];
+      
+      updateStatusBarHTML();
+      showScreen('screen-welcome');
+    }
+  </script>
+</body>
+</html>

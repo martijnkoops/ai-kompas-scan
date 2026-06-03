@@ -20,6 +20,8 @@
  * 10. Kopieer de 'Web-app-URL' en plak deze bovenaan in index.html bij APPS_SCRIPT_URL.
  */
 
+var TARGET_SHEET_NAME = "Blad1";
+
 function doPost(e) {
   // CORS Headers instellen voor preflight bypasses en algemene compatibiliteit
   var responseHeaders = {
@@ -33,9 +35,10 @@ function doPost(e) {
     var postData = e.postData.contents;
     var data = JSON.parse(postData);
 
-    // 2. Open de actieve spreadsheet waaraan dit script is gekoppeld
+    // 2. Open de doeltab in de spreadsheet waaraan dit script is gekoppeld.
     //    Als het script losstaat (standalone), gebruik dan SpreadsheetApp.openById("JOUW_SHEET_ID")
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    //    in getTargetSheet().
+    var sheet = getTargetSheet();
     
     // 3. Controleer of de sheet nieuw/leeg is om de kolomkoppen te schrijven
     if (sheet.getLastRow() === 0) {
@@ -91,6 +94,41 @@ function doPost(e) {
     return ContentService.createTextOutput(errorOutput)
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function doGet(e) {
+  try {
+    var sheet = getTargetSheet();
+    var output = JSON.stringify({
+      success: true,
+      message: "Backend is bereikbaar.",
+      sheetName: sheet.getName(),
+      rows: sheet.getLastRow()
+    });
+
+    return ContentService.createTextOutput(output)
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    var errorOutput = JSON.stringify({
+      success: false,
+      message: "Backend bereikbaar, maar Sheet openen mislukt.",
+      error: error.toString()
+    });
+
+    return ContentService.createTextOutput(errorOutput)
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getTargetSheet() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(TARGET_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(TARGET_SHEET_NAME);
+  }
+
+  return sheet;
 }
 
 /**

@@ -1955,7 +1955,7 @@
        SCORING MATRIX & GAME CONTENT OBJECTS
        ========================================================================= */
        
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxT30gn077ftNXWA73jFIPk7KYcXfyFWnLc6op7iW0C8J-EmurP_8D6fGhuuynKgwq7mw/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-hB3tESIhgAyJa7W9oa7_UCIr-2HzKq_fm91UBn4Fv0UHBBetimHF_ljmq62rNJ6Gjw/exec";
 
     const DIMENSIONS = [
       { key: "kennisTechniek", label: "Kennis tools & techniek", color: "#00e5ff" },
@@ -3550,8 +3550,8 @@
       .then(() => {
         statusMsg.style.display = "block";
         statusMsg.style.color = "var(--accent-basis)";
-        statusMsg.textContent = "Je scanresultaten zijn succesvol verwerkt en opgeslagen in de Google Sheet!";
-        submitBtn.textContent = "Resultaten Opgeslagen";
+        statusMsg.textContent = "Je resultaten zijn verzonden. Controleer in Google Sheet-tab 'Blad1' of er een nieuwe rij is toegevoegd.";
+        submitBtn.textContent = "Resultaten Verzonden";
       })
       .catch(err => {
         statusMsg.style.display = "block";

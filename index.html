@@ -2427,6 +2427,13 @@
       goToRules(1);
     }
 
+    function ensureTeamSelected() {
+      if (state.teamName) return true;
+      showScreen('screen-welcome');
+      openTeamModal();
+      return false;
+    }
+
     function generateAnonymousId() {
       const randomPart = Math.floor(100000 + Math.random() * 900000);
       return `ANON-${randomPart}`;
@@ -2479,6 +2486,8 @@
     }
 
     function startCurrentLevel() {
+      if (!ensureTeamSelected()) return;
+
       if (state.currentLevel === 1) {
         state.level1CurrentIndex = 0;
         initLevel1Case();
@@ -3785,6 +3794,18 @@
       
       updateStatusBarHTML();
       showScreen('screen-welcome');
+    }
+
+    function initializeTeamGate() {
+      if (!state.teamName) {
+        openTeamModal();
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeTeamGate);
+    } else {
+      initializeTeamGate();
     }
   </script>
 </body>

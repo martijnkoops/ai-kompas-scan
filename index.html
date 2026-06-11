@@ -1973,11 +1973,11 @@
         <div class="result-section">
           <div class="section-heading-row">
             <div>
-              <span class="profile-badge">Vijf domeinen</span>
-              <h3>Wat was zichtbaar in je antwoorden?</h3>
+              <span class="profile-badge">Kernbewijs</span>
+              <h3>Wat is echt aangetoond in deze scan?</h3>
             </div>
             <p class="section-note">
-              De balken tonen bewijs dat in deze compacte scan zichtbaar werd. Ze vervangen de oude driehoekgrafiek, omdat een nettoscore positieve signalen kon wegstrepen tegen latere risicokeuzes.
+              Deze balken tonen de kernonderdelen waarop het adviesniveau is gebaseerd. Domeinscores helpen vooral om trainingsbehoefte te duiden; ze zijn geen zelfstandig bewijs voor niveau 2 of 3.
             </p>
           </div>
           <div class="evidence-grid" id="evidence-summary-grid"></div>
@@ -2003,7 +2003,7 @@
               <h3>Criteria per niveau</h3>
             </div>
             <p class="section-note">
-              Niveau 1 en 2 staan volledig in beeld; niveau 3 laat zien waar de scan strategische signalen raakt. Per criterium zie je of het is aangetoond, deels zichtbaar, nog niet zichtbaar of niet direct getoetst.
+              De criterialijst is een reflectiehulp. Criteria boven je adviesniveau worden hooguit als signaal getoond, niet als volledig aangetoonde competentie.
             </p>
           </div>
           <div class="criteria-legend" id="criteria-legend"></div>
@@ -3292,15 +3292,22 @@
       return "notShown";
     }
 
-    function buildCriterionEvaluation(signals) {
+    function capCriterionStatusForLevel(status, criterionLevel, scanSummary) {
+      if (!scanSummary || criterionLevel <= scanSummary.assessedLevel) return status;
+      if (status === "shown") return "partial";
+      return status;
+    }
+
+    function buildCriterionEvaluation(signals, scanSummary) {
       const criteria = [];
 
       COMPETENCY_GUIDE.forEach(level => {
         level.criteria.forEach(criterion => {
+          const rawStatus = getCriterionStatus(criterion, signals);
           criteria.push({
             ...criterion,
             level: level.level,
-            status: getCriterionStatus(criterion, signals)
+            status: capCriterionStatusForLevel(rawStatus, level.level, scanSummary)
           });
         });
       });
@@ -3411,26 +3418,126 @@
       return `De totaalscore alleen bepaalt het niveau niet meer. Voor niveau 2 is ook kernbewijs nodig: ${missing.join("; ") || "meer consistent bewijs in de kernopdrachten"}.`;
     }
 
-    function getDimensionSummaries(criteria) {
-      return DIMENSIONS.map(dimension => {
-        const dimensionCriteria = criteria.filter(criterion => criterion.dimension === dimension.key);
-        const shown = dimensionCriteria.filter(criterion => criterion.status === "shown").length;
-        const partial = dimensionCriteria.filter(criterion => criterion.status === "partial").length;
-        const notShown = dimensionCriteria.filter(criterion => criterion.status === "notShown").length;
-        const notTested = dimensionCriteria.filter(criterion => criterion.status === "notTested").length;
-        const assessed = Math.max(1, dimensionCriteria.length - notTested);
-        const percent = Math.round(((shown + (partial * 0.5)) / assessed) * 100);
+    function getCoreEvidenceRows(summary) {
+      const policyEvidence = summary.hasMandate
+        ? Math.max(0, summary.strongPolicyChoices - 1)
+        : summary.strongPolicyChoices;
 
-        return {
-          ...dimension,
-          shown,
-          partial,
-          notShown,
-          notTested,
-          total: dimensionCriteria.length,
-          percent: Math.min(100, percent)
-        };
-      });
+      const pctOf = (value, total) => total ? Math.round((value / total) * 100) : 0;
+
+      return [
+        {
+          label: "Compliance-inschatting",
+          value: `${summary.correctZones}/${summary.totalZones}`,
+          percent: pctOf(summary.correctZones, summary.totalZones),
+          color: "var(--accent-basis)",
+          chartColor: "#00fa9a",
+          detail: "Juiste zone gekozen: veilig inzetten, eerst aanpassen of niet verantwoord."
+        },
+        {
+          label: "Risicoherkenning",
+          value: `${summary.correctRisks}/${summary.totalRisks}`,
+          percent: pctOf(summary.correctRisks, summary.totalRisks),
+          color: "var(--accent-basis)",
+          chartColor: "#00c985",
+          detail: "Relevante risico's herkend, zoals privacy, transparantie, broncontrole en bias."
+        },
+        {
+          label: "AI-regie audit",
+          value: `${summary.correctAudits}/${summary.totalAudits}`,
+          percent: pctOf(summary.correctAudits, summary.totalAudits),
+          color: "var(--accent-didactiek)",
+          chartColor: "#00e5ff",
+          detail: "Correct onderscheid tussen vervangen, aanvullen en verrijken."
+        },
+        {
+          label: "Workflowkwaliteit",
+          value: `${summary.workflowSignals}/${summary.workflowSignalsTotal}`,
+          percent: pctOf(summary.workflowSignals, summary.workflowSignalsTotal),
+          color: "var(--accent-didactiek)",
+          chartColor: "#1ba3ff",
+          detail: "Veilige tool, sterke prompt en expliciete menselijke review."
+        },
+        {
+          label: "Beleid & borging",
+          value: `${policyEvidence}/3`,
+          percent: pctOf(policyEvidence, 3),
+          color: "var(--accent-visie)",
+          chartColor: "#b39ddb",
+          detail: summary.hasMandate
+            ? "Verplicht AI-gebruik remt het bewijs voor verantwoorde borging."
+            : "Structurele keuzes zoals leerlijn, richtlijnen en co-creatie."
+        }
+      ];
+    }
+
+    function getDomainLabel(scoreKey) {
+      const labels = {
+        basisEthiek: "Basis & Ethiek",
+        didactiekTechniek: "Toepassing & Techniek",
+        visieBeleid: "Visie & Beleid"
+      };
+      return labels[scoreKey] || scoreKey;
+    }
+
+    function getProfileName(level, scoreKey) {
+      const names = {
+        1: {
+          basisEthiek: "Niveau 1 - Basis in risicoherkenning",
+          didactiekTechniek: "Niveau 1 - Basis in AI-toepassing",
+          visieBeleid: "Niveau 1 - Basis in teamafspraken"
+        },
+        2: {
+          basisEthiek: "Niveau 2 - AI-Risicospotter",
+          didactiekTechniek: "Niveau 2 - AI-Workflow Ontwerper",
+          visieBeleid: "Niveau 2 - AI-Afsprakenbouwer"
+        },
+        3: {
+          basisEthiek: "Niveau 3 - AI-Kwaliteitsbewaker",
+          didactiekTechniek: "Niveau 3 - AI-Workflow Ontwerper",
+          visieBeleid: "Niveau 3 - AI-Richtinggever"
+        }
+      };
+      return names[level][scoreKey];
+    }
+
+    function getProfileText(level, scoreKey, weakestScoreKey, levelAdvice, focusAdvice) {
+      const strongestDomain = getDomainLabel(scoreKey);
+      const weakestDomain = getDomainLabel(weakestScoreKey);
+
+      if (level === 1) {
+        return `<strong>${levelAdvice[level].mastery}</strong><br><br>Je hoogste domeinscore ligt bij <strong>${strongestDomain}</strong>. Dat is een aanwijzing voor waar je antwoorden relatief sterker waren, maar nog geen bewijs voor gevorderde beheersing. Het belangrijkste ontwikkelpunt ligt nu bij <strong>${weakestDomain}</strong>. ${focusAdvice[weakestScoreKey]}`;
+      }
+
+      if (level === 2) {
+        return `<strong>${levelAdvice[level].mastery}</strong><br><br>Je antwoorden laten vooral ontwikkeling zien in <strong>${strongestDomain}</strong>. Gebruik dit als aanknopingspunt om je werkwijze consistenter te maken en zwakkere onderdelen gericht te oefenen. ${focusAdvice[weakestScoreKey]}`;
+      }
+
+      return `<strong>${levelAdvice[level].mastery}</strong><br><br>Je sterkste signalen liggen bij <strong>${strongestDomain}</strong>. Let erop dat niveau 3 in de praktijk extra bewijs vraagt buiten deze scan, vooral wanneer je anderen begeleidt of beleid helpt vormgeven. ${focusAdvice[weakestScoreKey]}`;
+    }
+
+    function getEvidenceBasedFocusAction(summary, fallbackAction) {
+      if (summary.correctZones < 3) {
+        return "Oefen eerst met compliancecasussen: bepaal per casus of AI veilig kan, eerst aangepast moet worden of niet verantwoord is.";
+      }
+
+      if (summary.correctRisks < 4) {
+        return "Oefen met het expliciet benoemen van risico's: privacy, transparantie, broncontrole, bias en regieverlies.";
+      }
+
+      if (summary.correctAudits < 3) {
+        return "Oefen met AI-regie: herken wanneer AI eigen denken vervangt, wanneer AI aanvult en wanneer AI analyse verrijkt.";
+      }
+
+      if (summary.workflowSignals < 2) {
+        return "Bouw een eenvoudige workflow met minimaal twee kwaliteitsankers: veilige tool, sterke prompt en menselijke review.";
+      }
+
+      if (summary.assessedLevel === 2 && (summary.strongPolicyChoices < 2 || summary.hasMandate)) {
+        return "Werk aan borging: vertaal individuele AI-keuzes naar richtlijnen, leerlijnen of co-creatie in plaats van generieke verplichting.";
+      }
+
+      return fallbackAction;
     }
 
     function renderStatusPill(status) {
@@ -3445,20 +3552,20 @@
       return "Deze compacte scan vraagt dit niet expliciet uit.";
     }
 
-    function renderEvidenceSummary(summaries) {
+    function renderEvidenceSummary(evidenceRows) {
       const grid = document.getElementById('evidence-summary-grid');
-      grid.innerHTML = summaries.map(summary => `
-        <div class="evidence-tile" style="border-left-color: ${summary.color};">
-          <div class="evidence-label">${summary.label}</div>
-          <div class="evidence-value" style="color: ${summary.color};">${summary.percent}%</div>
+      grid.innerHTML = evidenceRows.map(row => `
+        <div class="evidence-tile" style="border-left-color: ${row.color};">
+          <div class="evidence-label">${row.label}</div>
+          <div class="evidence-value" style="color: ${row.color};">${row.value}</div>
           <div class="evidence-detail">
-            ${summary.shown} aangetoond, ${summary.partial} deels, ${summary.notShown} nog niet zichtbaar, ${summary.notTested} niet getoetst.
+            ${row.percent}% kernbewijs. ${row.detail}
           </div>
         </div>
       `).join('');
     }
 
-    function renderCriteriaGuide(evaluation) {
+    function renderCriteriaGuide(evaluation, assessedLevel) {
       const legend = document.getElementById('criteria-legend');
       legend.innerHTML = Object.keys(STATUS_META).map(status => renderStatusPill(status)).join('');
 
@@ -3468,6 +3575,9 @@
         const shown = levelCriteria.filter(criterion => criterion.status === "shown").length;
         const partial = levelCriteria.filter(criterion => criterion.status === "partial").length;
         const notTested = levelCriteria.filter(criterion => criterion.status === "notTested").length;
+        const levelCaution = level.level > assessedLevel
+          ? "<br>Boven adviesniveau: signalen zijn geen volledig bewijs."
+          : "";
 
         const dimensionBlocks = DIMENSIONS.map(dimension => {
           const criteria = levelCriteria.filter(criterion => criterion.dimension === dimension.key);
@@ -3504,7 +3614,7 @@
               <div class="criteria-level-score">
                 <strong>${shown} aangetoond</strong>
                 ${partial} deels zichtbaar<br>
-                ${notTested} niet direct getoetst
+                ${notTested} niet direct getoetst${levelCaution}
               </div>
             </div>
             ${dimensionBlocks}
@@ -3662,11 +3772,11 @@
       showScreen('screen-results');
       
       const scores = state.scores;
-      const evidenceSignals = buildEvidenceSignals();
-      const criterionEvaluation = buildCriterionEvaluation(evidenceSignals);
-      const dimensionSummaries = getDimensionSummaries(criterionEvaluation.criteria);
       const scanSummary = buildScanSummary();
       state.scanSummary = scanSummary;
+      const evidenceSignals = buildEvidenceSignals();
+      const criterionEvaluation = buildCriterionEvaluation(evidenceSignals, scanSummary);
+      const coreEvidenceRows = getCoreEvidenceRows(scanSummary);
       
       const profileName = document.getElementById('final-profile-name');
       const profileText = document.getElementById('final-profile-feedback');
@@ -3720,26 +3830,23 @@
         visieBeleid: "Bespreek met je team een concreet voorbeeld: wat vinden jullie veilig, wanneer melden jullie AI-gebruik en wie controleert de output?"
       };
 
-      if (maxScoreKey === 'basisEthiek') {
-        profileName.textContent = `Niveau ${level} - De AI-Risicospotter`;
-        profileName.style.color = "var(--accent-basis)";
-        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jouw kracht ligt in het bewaken van fundamentele kaders. Je bent scherp op privacy, ethiek, bias en betrouwbaarheid. ${focusAdvice[minScoreKey]}`;
-      } else if (maxScoreKey === 'didactiekTechniek') {
-        profileName.textContent = `Niveau ${level} - De AI-Workflow Ontwerper`;
-        profileName.style.color = "var(--accent-didactiek)";
-        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jouw kracht ligt in het praktisch toepassen van AI. Je ontwerpt bruikbare prompts en workflows waarin de gebruiker actief blijft nadenken. ${focusAdvice[minScoreKey]}`;
-      } else {
-        profileName.textContent = `Niveau ${level} - De AI-Richtinggever`;
-        profileName.style.color = "var(--accent-visie)";
-        profileText.innerHTML = `<strong>${levelAdvice[level].mastery}</strong><br><br>Jij overziet het grotere geheel. Je denkt in afspraken, borging, rollen en duurzame invoering. ${focusAdvice[minScoreKey]}`;
-      }
+      const profileColors = {
+        basisEthiek: "var(--accent-basis)",
+        didactiekTechniek: "var(--accent-didactiek)",
+        visieBeleid: "var(--accent-visie)"
+      };
+      const evidenceFocusAction = getEvidenceBasedFocusAction(scanSummary, focusAction[minScoreKey]);
+
+      profileName.textContent = getProfileName(level, maxScoreKey);
+      profileName.style.color = profileColors[maxScoreKey];
+      profileText.innerHTML = getProfileText(level, maxScoreKey, minScoreKey, levelAdvice, focusAdvice);
 
       profileGoal.innerHTML = `
         <div class="growth-advice">
           <div><strong>Volgende stap:</strong> ${levelAdvice[level].next}</div>
           <div><strong>Oefenactie:</strong> ${levelAdvice[level].practice}</div>
           <div><strong>Verdieping:</strong> ${levelAdvice[level].deepen}</div>
-          <div><strong>Focuspunt voor jou:</strong> ${focusAction[minScoreKey]}</div>
+          <div><strong>Focuspunt voor jou:</strong> ${evidenceFocusAction}</div>
           <div><strong>Rolcheck:</strong> ${levelAdvice[level].role}</div>
         </div>
       `;
@@ -3752,10 +3859,10 @@
         Kernbewijs: ${scanSummary.correctZones}/${scanSummary.totalZones} compliance-inschattingen correct, ${scanSummary.correctRisks}/${scanSummary.totalRisks} relevante risico's herkend, ${scanSummary.correctAudits}/${scanSummary.totalAudits} AI-regie-audits correct.
       `;
 
-      renderEvidenceSummary(dimensionSummaries);
+      renderEvidenceSummary(coreEvidenceRows);
       renderAiRegieSummary();
       renderReflectionItems();
-      renderCriteriaGuide(criterionEvaluation);
+      renderCriteriaGuide(criterionEvaluation, level);
 
       const ctx = document.getElementById('competenceChart').getContext('2d');
       
@@ -3766,12 +3873,12 @@
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: dimensionSummaries.map(summary => summary.label),
+          labels: coreEvidenceRows.map(row => row.label),
           datasets: [{
-            label: 'Zichtbaar bewijs binnen getoetste criteria',
-            data: dimensionSummaries.map(summary => summary.percent),
-            backgroundColor: dimensionSummaries.map(summary => `${summary.color}88`),
-            borderColor: dimensionSummaries.map(summary => summary.color),
+            label: 'Kernbewijs voor adviesniveau',
+            data: coreEvidenceRows.map(row => row.percent),
+            backgroundColor: coreEvidenceRows.map(row => `${row.chartColor}88`),
+            borderColor: coreEvidenceRows.map(row => row.chartColor),
             borderWidth: 1
           }]
         },
@@ -3809,7 +3916,7 @@
             },
             tooltip: {
               callbacks: {
-                label: context => `${context.raw}% zichtbaar binnen getoetste criteria`
+                label: context => `${context.raw}% kernbewijs`
               }
             }
           }

@@ -1528,7 +1528,7 @@
     <div class="screen hidden" id="screen-rules">
       <div class="glass-panel rules-card">
         <div class="rules-icon" id="rules-icon-box">🧠</div>
-        <h2 class="rules-title" id="rules-title-text">Ronde 1: De Risico-Scanner</h2>
+        <h2 class="rules-title" id="rules-title-text">Ronde 1: Compliance & Risico</h2>
         <p class="rules-text" id="rules-desc-text">
           Rules description text...
         </p>
@@ -1541,7 +1541,7 @@
     <!-- LEVEL 1: DE RISICO-SCANNER -->
     <div class="screen hidden" id="screen-l1">
       <div class="glass-panel">
-        <h2 style="margin-bottom: 24px; color: var(--accent-basis);">Ronde 1: De Risico-Scanner</h2>
+        <h2 style="margin-bottom: 24px; color: var(--accent-basis);">Ronde 1: Compliance & Risico</h2>
         
         <div class="scanner-workspace">
           <!-- Top zones -->
@@ -1636,12 +1636,12 @@
       </div>
     </div>
 
-    <!-- LEVEL 2 (NEW): PROMPT-TRAIL AUDIT -->
+    <!-- LEVEL 2: AI-REGIE AUDIT -->
     <div class="screen hidden" id="screen-l2">
       <div class="glass-panel">
-        <h2 style="margin-bottom: 12px; color: var(--accent-didactiek);">Ronde 2: Prompt-Trail Audit</h2>
+        <h2 style="margin-bottom: 12px; color: var(--accent-didactiek);">Ronde 2: AI-Regie Audit</h2>
         <p style="color: var(--text-muted); margin-bottom: 24px;" id="l2-lead-text">
-          Spelers-audit: Review de onderstaande chat-interactie tussen een collega en een AI-tool. Welke werkstrategie toont deze collega hier?
+          Review de onderstaande chat-interactie tussen een collega en een AI-tool. Welke rol krijgt AI in het denk- en werkproces?
         </p>
 
         <div class="audit-workspace">
@@ -1650,17 +1650,17 @@
           </div>
 
           <div class="strategy-selection-grid">
-            <button class="strategy-btn" id="strat-coping" onclick="selectStrategy('coping')">
-              <div class="strategy-title">Oppervlakkig Copinggedrag</div>
-              <div class="strategy-desc">De collega neemt blindelings output over en minimaliseert eigen denkwerk.</div>
+            <button class="strategy-btn" id="strat-replace" onclick="selectStrategy('replace')">
+              <div class="strategy-title">Vervangen</div>
+              <div class="strategy-desc">AI neemt eigen denken, inhoudelijke keuzes of besluitvorming over.</div>
             </button>
-            <button class="strategy-btn" id="strat-sparring" onclick="selectStrategy('sparring')">
-              <div class="strategy-title">Actieve Sparringpartner</div>
-              <div class="strategy-desc">De collega daagt de AI uit, toont kritische zin en verifieert beweringen.</div>
+            <button class="strategy-btn" id="strat-augment" onclick="selectStrategy('augment')">
+              <div class="strategy-title">Aanvullen</div>
+              <div class="strategy-desc">AI ondersteunt eigen werk met feedback, ordening, redactie of controle.</div>
             </button>
-            <button class="strategy-btn" id="strat-bypassing" onclick="selectStrategy('bypassing')">
-              <div class="strategy-title">Ontwijkend Bypassinggedrag</div>
-              <div class="strategy-desc">De collega besteedt essentiele denkstappen of vaardigheden volledig uit aan de AI.</div>
+            <button class="strategy-btn" id="strat-enrich" onclick="selectStrategy('enrich')">
+              <div class="strategy-title">Verrijken</div>
+              <div class="strategy-desc">AI verdiept het denken met alternatieven, tegenargumenten, bronnen en perspectieven.</div>
             </button>
           </div>
 
@@ -1877,6 +1877,7 @@
         </div>
 
         <div class="result-explainer" id="scan-scope-note"></div>
+        <div class="result-explainer" id="ai-regie-summary"></div>
 
         <div class="result-section">
           <div class="section-heading-row">
@@ -2133,7 +2134,7 @@
       }
     ];
 
-    // LEVEL 2: PROMPT-TRAIL AUDITS (NEW LEVEL)
+    // LEVEL 2: AI-REGIE AUDITS
     const L2_TRAILS = [
       {
         id: "audit_1",
@@ -2143,9 +2144,9 @@
           { sender: "AI", text: "Hybride samenwerken is een essentieel onderdeel van moderne organisaties. Het combineert flexibiliteit, digitale samenwerking en betere balans tussen werk en prive..." },
           { sender: "Collega", text: "Bedankt. Vertaal dit nu naar het Engels zodat ik het direct in het voorstel kan plakken." }
         ],
-        correctStrategy: "coping",
-        feedback: "Correct geanalyseerd! Daan vertoont **Oppervlakkig Copinggedrag**. Hij gebruikt de AI als snelle vervanger van eigen denk- en schrijfwerk en reflecteert niet op kwaliteit, claims of passendheid van de tekst.",
-        scoring: { coping: 3, sparring: 0, bypassing: 1 }
+        correctStrategy: "replace",
+        feedback: "Correct geanalyseerd! Daan gebruikt AI om eigen denk- en schrijfwerk te <strong>vervangen</strong>. Hij neemt de tekst vrijwel direct over en reflecteert niet op kwaliteit, claims of passendheid.",
+        scoring: { replace: 3, augment: 1, enrich: 0 }
       },
       {
         id: "audit_2",
@@ -2155,9 +2156,9 @@
           { sender: "AI", text: "Je stelling is duidelijk, maar het woord 'altijd' is erg absoluut. Gartner beschrijft meestal voorwaarden zoals datakwaliteit, governance, menselijke controle en veranderbereidheid..." },
           { sender: "Collega", text: "Dat is nuttig. Kun je aangeven welke aannames ik expliciet moet toetsen en welke bronclaims ik apart moet verifieren voordat ik dit in mijn advies gebruik?" }
         ],
-        correctStrategy: "sparring",
-        feedback: "Uitstekend beoordeeld! Sophie gebruikt de AI als een **Actieve Sparringpartner**. Ze voert een kritische dialoog, toetst aannames en vraagt expliciet om verificatie voordat ze de output gebruikt.",
-        scoring: { coping: 0, sparring: 3, bypassing: 0 }
+        correctStrategy: "enrich",
+        feedback: "Uitstekend beoordeeld! Sophie gebruikt AI om haar denken te <strong>verrijken</strong>. Ze vraagt om aannames, verificatiepunten en bronclaims, zodat ze haar eigen advies kritischer kan onderbouwen.",
+        scoring: { replace: 0, augment: 1, enrich: 3 }
       },
       {
         id: "audit_3",
@@ -2167,9 +2168,33 @@
           { sender: "AI", text: "Hier zijn drie opties:\n1. Een voorzichtige pilot met beperkte groep.\n2. Een gefaseerde uitrol per proces.\n3. Een snelle brede introductie met centrale ondersteuning." },
           { sender: "Collega", text: "Kies de beste optie, schrijf de volledige besluitnotitie en verzin alvast drie onderbouwende bronnen die ik later kan invullen." }
         ],
-        correctStrategy: "bypassing",
-        feedback: "Heel scherp! Mark vertoont **Ontwijkend Bypassinggedrag**. Hij laat de AI essentiele keuzes maken en vraagt zelfs om verzonnen brononderbouwing. Dat ondermijnt kwaliteit, transparantie en betrouwbaarheid.",
-        scoring: { coping: 1, sparring: 0, bypassing: 3 }
+        correctStrategy: "replace",
+        feedback: "Heel scherp! Mark laat AI zijn inhoudelijke keuze en brononderbouwing <strong>vervangen</strong>. Dat is risicovol, zeker omdat hij zelfs om verzonnen bronnen vraagt.",
+        scoring: { replace: 3, augment: 0, enrich: 0 }
+      },
+      {
+        id: "audit_4",
+        participantName: "Noor",
+        chat: [
+          { sender: "Collega", text: "Ik heb zelf een conceptmail geschreven over de nieuwe AI-afspraken in ons team." },
+          { sender: "AI", text: "Ik zie drie punten die helderder kunnen: de doelgroep, het onderscheid tussen publieke en afgeschermde tools, en wie eindcontrole doet." },
+          { sender: "Collega", text: "Dank. Ik neem alleen de punten over die kloppen met onze afspraken en herschrijf de mail zelf in onze toon." }
+        ],
+        correctStrategy: "augment",
+        feedback: "Goed gezien! Noor gebruikt AI om haar eigen werk aan te <strong>vullen</strong>. De inhoudelijke basis en eindredactie blijven bij haar, terwijl AI helpt met structuur en aandachtspunten.",
+        scoring: { replace: 0, augment: 3, enrich: 1 }
+      },
+      {
+        id: "audit_5",
+        participantName: "Ravi",
+        chat: [
+          { sender: "Collega", text: "Ik heb een eerste versie van een checklist gemaakt voor veilig gebruik van generatieve AI bij externe communicatie." },
+          { sender: "AI", text: "Je kunt de checklist aanvullen met punten over toestemming, broncontrole, representatieve beelden en transparantie over AI-gebruik." },
+          { sender: "Collega", text: "Goed, ik vergelijk deze suggesties met ons communicatiebeleid en voeg alleen toe wat daarin past. Daarna laat ik een collega meelezen." }
+        ],
+        correctStrategy: "augment",
+        feedback: "Correct. Ravi gebruikt AI om bestaand eigen werk aan te <strong>vullen</strong>. AI levert suggesties, maar beleid, controle en menselijke review bepalen wat uiteindelijk wordt gebruikt.",
+        scoring: { replace: 0, augment: 3, enrich: 1 }
       }
     ];
 
@@ -2298,12 +2323,12 @@
       
       if (levelNum === 1) {
         icon.textContent = "🔍";
-        title.textContent = "Ronde 1: De Risico-Scanner";
-        desc.innerHTML = "Er verschijnen casuskaarten van realistische werksituaties. Sleep elke kaart naar de juiste zone:<br><strong>1. Veilig inzetten</strong>, <strong>2. Eerst aanpassen</strong>, of <strong>3. Niet verantwoord</strong>.<br><br>Daarna scan je de situatie op alle aanwezige risico's om de ronde te voltooien.";
+        title.textContent = "Ronde 1: Compliance & Risico";
+        desc.innerHTML = "Deze ronde gaat vooral over verantwoord en compliant handelen: privacy, AVG, transparantie, bias en betrouwbaarheid. Er verschijnen casuskaarten van realistische werksituaties. Sleep elke kaart naar de juiste zone:<br><strong>1. Veilig inzetten</strong>, <strong>2. Eerst aanpassen</strong>, of <strong>3. Niet verantwoord</strong>.<br><br>Daarna scan je de situatie op alle aanwezige risico's om de ronde te voltooien.";
       } else if (levelNum === 2) {
         icon.textContent = "📊";
-        title.textContent = "Ronde 2: Prompt-Trail Audit";
-        desc.innerHTML = "Als collega moet je AI-gebruik kunnen beoordelen. We tonen je chat-logs (Prompt Trails) waarin collega's samenwerken met AI.<br><br>Audit de interactie en categoriseer de werkstrategie correct.";
+        title.textContent = "Ronde 2: AI-Regie Audit";
+        desc.innerHTML = "Als collega moet je AI-gebruik kunnen beoordelen. We tonen je chat-logs waarin collega's samenwerken met AI.<br><br>Audit de interactie en bepaal of AI het eigen denken vervangt, aanvult of verrijkt.";
       } else if (levelNum === 3) {
         icon.textContent = "🛠️";
         title.textContent = "Ronde 3: De AI-Werkplaats";
@@ -2641,8 +2666,8 @@
         initLevel2Audit();
       } else {
         showLevelUp(
-          "Prompt-audit voltooid",
-          "Uitstekend werk. Je kunt interacties met AI nu accuraat analyseren op actieve versus passieve werkstrategieen.",
+          "AI-regie audit voltooid",
+          "Uitstekend werk. Je kunt interacties met AI nu analyseren op de vraag of AI het eigen denken vervangt, aanvult of verrijkt.",
           3
         );
       }
@@ -2741,8 +2766,8 @@
       const promptCard = L3_CARDS.prompts.find(c => c.id === choices.prompt);
       const didCard = L3_CARDS.didactics.find(c => c.id === choices.didactiek);
       
-      let didactiekScore = toolCard.scores.didactiekTechniek + promptCard.scores.didactiekTechniek + didCard.scores.didactiekTechniek;
-      let ethicScore = toolCard.scores.basisEthiek + promptCard.scores.basisEthiek + didCard.scores.basisEthiek;
+      let didactiekScore = (toolCard.scores.didactiekTechniek || 0) + (promptCard.scores.didactiekTechniek || 0) + (didCard.scores.didactiekTechniek || 0);
+      let ethicScore = (toolCard.scores.basisEthiek || 0) + (promptCard.scores.basisEthiek || 0) + (didCard.scores.basisEthiek || 0);
       
       const comboKey = `${choices.tool}_${choices.prompt}_${choices.didactiek}`;
       const predefined = L3_RECIPES[comboKey];
@@ -3072,7 +3097,7 @@
         }
       });
 
-      if (correctAuditCount >= 2) addSignal("l2_most_audits");
+      if (correctAuditCount >= 3) addSignal("l2_most_audits");
       if (correctAuditCount === L2_TRAILS.length) addSignal("l2_all_audits");
 
       const l3Choices = state.choices.level3 || {};
@@ -3248,11 +3273,44 @@
 
     function getStrategyLabel(strategy) {
       const labels = {
-        coping: "Oppervlakkig copinggedrag",
-        sparring: "Actieve sparringpartner",
-        bypassing: "Ontwijkend bypassinggedrag"
+        replace: "Vervangen",
+        augment: "Aanvullen",
+        enrich: "Verrijken"
       };
       return labels[strategy] || strategy;
+    }
+
+    function renderAiRegieSummary() {
+      const summaryBox = document.getElementById('ai-regie-summary');
+      const counts = { replace: 0, augment: 0, enrich: 0 };
+      let correctCount = 0;
+
+      state.choices.level2.forEach(choice => {
+        if (counts[choice.strategyChosen] !== undefined) {
+          counts[choice.strategyChosen]++;
+        }
+
+        const currentAudit = L2_TRAILS.find(a => a.id === choice.auditId);
+        if (currentAudit && choice.strategyChosen === currentAudit.correctStrategy) {
+          correctCount++;
+        }
+      });
+
+      const mostChosen = Object.keys(counts).reduce((best, key) =>
+        counts[key] > counts[best] ? key : best
+      , "replace");
+
+      const regieDescriptions = {
+        replace: "AI neemt dan relatief veel denkwerk of besluitvorming over.",
+        augment: "AI ondersteunt dan vooral eigen werk, controle en redactie.",
+        enrich: "AI wordt dan gebruikt om analyse, perspectieven en verificatie te verdiepen."
+      };
+
+      summaryBox.innerHTML = `
+        <strong>AI-regie in ronde 2:</strong> je herkende ${correctCount} van de ${L2_TRAILS.length} interacties correct.
+        In je antwoorden koos je het vaakst voor <strong>${getStrategyLabel(mostChosen)}</strong>.
+        ${regieDescriptions[mostChosen]} De gewenste beweging is niet altijd maximaal AI-gebruik, maar passende regie: wanneer vervangt AI eigen denken, wanneer vult AI aan en wanneer verrijkt AI de analyse?
+      `;
     }
 
     function buildReflectionItems() {
@@ -3282,8 +3340,8 @@
         if (!currentAudit || choice.strategyChosen === currentAudit.correctStrategy) return;
 
         items.push({
-          title: `Prompt-trail van ${currentAudit.participantName}`,
-          text: `De betere audit was: ${getStrategyLabel(currentAudit.correctStrategy)}. Kijk scherper naar regie, broncontrole en menselijke verantwoordelijkheid.`
+          title: `AI-regie audit van ${currentAudit.participantName}`,
+          text: `De betere audit was: ${getStrategyLabel(currentAudit.correctStrategy)}. Kijk scherper naar wie de regie heeft: neemt AI het denken over, ondersteunt AI het eigen werk of verdiept AI de analyse?`
         });
       });
 
@@ -3440,6 +3498,7 @@
       `;
 
       renderEvidenceSummary(dimensionSummaries);
+      renderAiRegieSummary();
       renderReflectionItems();
       renderCriteriaGuide(criterionEvaluation);
 

@@ -242,21 +242,6 @@
       font-size: 0.95rem;
     }
 
-    .start-team-form {
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid var(--border-glass);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 18px;
-    }
-
-    .start-team-form label {
-      display: block;
-      font-family: var(--font-title);
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
     .field-help,
     .field-error {
       margin-top: 8px;
@@ -522,6 +507,46 @@
       font-size: 0.95rem;
       color: var(--text-muted);
       margin-bottom: 24px;
+    }
+
+    .team-modal {
+      text-align: left;
+      max-width: 560px;
+    }
+
+    .team-modal .modal-title {
+      text-align: left;
+      color: var(--accent-didactiek);
+    }
+
+    .team-select-label {
+      display: block;
+      font-family: var(--font-title);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .team-select {
+      width: 100%;
+      background: rgba(21, 57, 111, 0.45);
+      border: 1px solid var(--border-glass-hover);
+      border-radius: 10px;
+      color: #ffffff;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      padding: 12px 14px;
+    }
+
+    .team-select option {
+      color: #071a33;
+      background: #ffffff;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     .risk-grid {
@@ -1529,17 +1554,9 @@
             De score is geen oordeel: niet iedereen hoeft op niveau 3 te werken. Welk niveau passend is, hangt af van je rol, verantwoordelijkheid en hoeveel richting je aan AI-gebruik moet geven.
           </p>
           <div class="scan-note">
-            De scan kijkt naar drie competentiegebieden: veilig en ethisch handelen, doelgericht toepassen en meedenken over afspraken of beleid.
+            De scan kijkt naar drie competentiegebieden: veilig en ethisch handelen, doelgericht toepassen en meedenken over afspraken of beleid. Voor het teamrapport kies je zo eerst je team uit een vaste lijst. Er wordt geen naam of e-mailadres gevraagd.
           </div>
-          <div class="start-team-form">
-            <label for="input-team-name">Teamnaam</label>
-            <input type="text" class="input-field" id="input-team-name" placeholder="Bijv. Team Communicatie of AI-training groep 1" maxlength="60" autocomplete="off">
-            <div class="field-help">
-              Vul alleen je teamnaam in. Gebruik geen persoonsnaam of e-mailadres. De scan slaat een automatisch anoniem nummer op, zodat resultaten alleen op teamniveau gebruikt kunnen worden voor trainingsbehoefte.
-            </div>
-            <div class="field-error" id="team-name-error">Vul eerst een teamnaam in om de scan te starten.</div>
-          </div>
-          <button class="btn btn-primary pulse-glow-btn" onclick="beginScan()">
+          <button class="btn btn-primary pulse-glow-btn" onclick="openTeamModal()">
             Start de scan
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </button>
@@ -1621,6 +1638,41 @@
               Volgende Casus
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAM SELECTION MODAL -->
+    <div class="overlay-modal" id="team-modal">
+      <div class="modal-content team-modal">
+        <h3 class="modal-title">Kies je team</h3>
+        <p class="modal-subtitle">
+          Kies je team uit de lijst voordat je start. De scan vraagt geen naam of e-mailadres en slaat alleen een automatisch anoniem nummer op voor teamrapportage en trainingsbehoefte.
+        </p>
+
+        <label class="team-select-label" for="select-team-name">Team</label>
+        <select class="team-select" id="select-team-name" onchange="handleTeamSelectionChange()">
+          <option value="">Selecteer een team...</option>
+          <option value="Natuurkunde">Natuurkunde</option>
+          <option value="Scheikunde">Scheikunde</option>
+          <option value="Techniek">Techniek</option>
+          <option value="Biologie">Biologie</option>
+          <option value="Gezondheidszorg &amp; Welzijn">Gezondheidszorg &amp; Welzijn</option>
+          <option value="Omgangskunde">Omgangskunde</option>
+          <option value="Duits">Duits</option>
+          <option value="Frans">Frans</option>
+          <option value="Spaans">Spaans</option>
+          <option value="Engels">Engels</option>
+          <option value="Nederlands">Nederlands</option>
+          <option value="Wiskunde">Wiskunde</option>
+          <option value="Aardrijkskunde">Aardrijkskunde</option>
+          <option value="Geschiedenis">Geschiedenis</option>
+        </select>
+        <div class="field-error" id="team-name-error">Kies eerst een team om verder te gaan.</div>
+
+        <div class="modal-actions">
+          <button class="btn" onclick="closeTeamModal()">Terug</button>
+          <button class="btn btn-primary" id="btn-confirm-team" onclick="beginScan()" disabled>Verder met scan</button>
         </div>
       </div>
     </div>
@@ -2336,26 +2388,40 @@
        SCREENS TRANSITIONS
        ========================================================================= */
 
-    function beginScan() {
-      const teamInput = document.getElementById('input-team-name');
+    function openTeamModal() {
+      document.getElementById('team-modal').classList.add('active');
+      handleTeamSelectionChange();
+    }
+
+    function closeTeamModal() {
+      document.getElementById('team-modal').classList.remove('active');
+    }
+
+    function handleTeamSelectionChange() {
+      const teamSelect = document.getElementById('select-team-name');
+      const confirmButton = document.getElementById('btn-confirm-team');
       const errorBox = document.getElementById('team-name-error');
-      const teamName = teamInput.value.trim();
+      const hasTeam = Boolean(teamSelect.value);
+      confirmButton.disabled = !hasTeam;
+      if (hasTeam) {
+        errorBox.style.display = "none";
+      }
+    }
+
+    function beginScan() {
+      const teamSelect = document.getElementById('select-team-name');
+      const errorBox = document.getElementById('team-name-error');
+      const teamName = teamSelect.value.trim();
 
       if (!teamName) {
         errorBox.style.display = "block";
-        errorBox.textContent = "Vul eerst een teamnaam in om de scan te starten.";
-        teamInput.focus();
-        return;
-      }
-
-      if (teamName.includes("@")) {
-        errorBox.style.display = "block";
-        errorBox.textContent = "Gebruik geen e-mailadres of persoonsnaam. Vul alleen een teamnaam of groepsnaam in.";
-        teamInput.focus();
+        errorBox.textContent = "Kies eerst een team om verder te gaan.";
+        teamSelect.focus();
         return;
       }
 
       errorBox.style.display = "none";
+      closeTeamModal();
       state.teamName = teamName;
       state.anonymousId = generateAnonymousId();
       goToRules(1);
@@ -3709,10 +3775,13 @@
       state.l4AssignedCoins = [null, null, null];
       state.teamName = "";
       state.anonymousId = "";
-      const teamInput = document.getElementById('input-team-name');
-      if (teamInput) teamInput.value = "";
+      const teamSelect = document.getElementById('select-team-name');
+      if (teamSelect) teamSelect.value = "";
+      const confirmTeamButton = document.getElementById('btn-confirm-team');
+      if (confirmTeamButton) confirmTeamButton.disabled = true;
       const teamError = document.getElementById('team-name-error');
       if (teamError) teamError.style.display = "none";
+      closeTeamModal();
       
       updateStatusBarHTML();
       showScreen('screen-welcome');

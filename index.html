@@ -242,6 +242,37 @@
       font-size: 0.95rem;
     }
 
+    .start-team-form {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .start-team-form label {
+      display: block;
+      font-family: var(--font-title);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .field-help,
+    .field-error {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+
+    .field-help {
+      color: var(--text-muted);
+    }
+
+    .field-error {
+      color: var(--accent-warning);
+      display: none;
+    }
+
     .competence-intro-box {
       display: flex;
       flex-direction: column;
@@ -1500,7 +1531,15 @@
           <div class="scan-note">
             De scan kijkt naar drie competentiegebieden: veilig en ethisch handelen, doelgericht toepassen en meedenken over afspraken of beleid.
           </div>
-          <button class="btn btn-primary pulse-glow-btn" onclick="goToRules(1)">
+          <div class="start-team-form">
+            <label for="input-team-name">Teamnaam</label>
+            <input type="text" class="input-field" id="input-team-name" placeholder="Bijv. Team Communicatie of AI-training groep 1" maxlength="60" autocomplete="off">
+            <div class="field-help">
+              Vul alleen je teamnaam in. Gebruik geen persoonsnaam of e-mailadres. De scan slaat een automatisch anoniem nummer op, zodat resultaten alleen op teamniveau gebruikt kunnen worden voor trainingsbehoefte.
+            </div>
+            <div class="field-error" id="team-name-error">Vul eerst een teamnaam in om de scan te starten.</div>
+          </div>
+          <button class="btn btn-primary pulse-glow-btn" onclick="beginScan()">
             Start de scan
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </button>
@@ -1923,11 +1962,10 @@
         <div class="submit-section">
           <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Scanresultaat Vastleggen</h3>
           <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Sla je resultaten optioneel op in het centrale dashboard. Voer een anonieme collega-code, teamnaam of afkorting in.
+            Sla je resultaat op voor het teamrapport. Je naam wordt niet gevraagd of opgeslagen; de scan gebruikt alleen de teamnaam en een automatisch anoniem nummer.
           </p>
           
           <div class="submit-form">
-            <input type="text" class="input-field" id="input-anon-id" placeholder="Bijv. TEAM-8182" max="25">
             <button class="btn btn-primary" id="btn-submit-data" onclick="submitAssessment()">
               Resultaten Opslaan
             </button>
@@ -2059,7 +2097,9 @@
       level2CurrentIndex: 0,
       currentLevel: 1,
       l4AssignedCoins: [null, null, null],
-      level1SelectedRisks: [] // Tracks currently checked risks in modal
+      level1SelectedRisks: [], // Tracks currently checked risks in modal
+      teamName: "",
+      anonymousId: ""
     };
 
     // LEVEL 1: SUBTLE CASES (No obvious tells, positive adapt scoring)
@@ -2295,6 +2335,36 @@
     /* =========================================================================
        SCREENS TRANSITIONS
        ========================================================================= */
+
+    function beginScan() {
+      const teamInput = document.getElementById('input-team-name');
+      const errorBox = document.getElementById('team-name-error');
+      const teamName = teamInput.value.trim();
+
+      if (!teamName) {
+        errorBox.style.display = "block";
+        errorBox.textContent = "Vul eerst een teamnaam in om de scan te starten.";
+        teamInput.focus();
+        return;
+      }
+
+      if (teamName.includes("@")) {
+        errorBox.style.display = "block";
+        errorBox.textContent = "Gebruik geen e-mailadres of persoonsnaam. Vul alleen een teamnaam of groepsnaam in.";
+        teamInput.focus();
+        return;
+      }
+
+      errorBox.style.display = "none";
+      state.teamName = teamName;
+      state.anonymousId = generateAnonymousId();
+      goToRules(1);
+    }
+
+    function generateAnonymousId() {
+      const randomPart = Math.floor(100000 + Math.random() * 900000);
+      return `ANON-${randomPart}`;
+    }
 
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -3567,11 +3637,19 @@
        ========================================================================= */
 
     function submitAssessment() {
-      const anonIdInput = document.getElementById('input-anon-id').value.trim();
       const statusMsg = document.getElementById('submit-status-msg');
       const submitBtn = document.getElementById('btn-submit-data');
       
-      const anonymousId = anonIdInput || "ANON-COL-" + Math.floor(1000 + Math.random() * 9000);
+      if (!state.teamName) {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-warning)";
+        statusMsg.textContent = "Teamnaam ontbreekt. Start de scan opnieuw en vul eerst een teamnaam in.";
+        return;
+      }
+
+      if (!state.anonymousId) {
+        state.anonymousId = generateAnonymousId();
+      }
       
       if (APPS_SCRIPT_URL === "JOUW_GOOGLE_APPS_SCRIPT_URL_HIER") {
         statusMsg.style.display = "block";
@@ -3584,7 +3662,8 @@
       submitBtn.textContent = "Verzenden...";
       
       const payload = {
-        anonymousId: anonymousId,
+        teamName: state.teamName,
+        anonymousId: state.anonymousId,
         timestamp: new Date().toISOString(),
         basisEthiek: state.scores.basisEthiek,
         didactiekTechniek: state.scores.didactiekTechniek,
@@ -3628,6 +3707,12 @@
       state.level2CurrentIndex = 0;
       state.currentLevel = 1;
       state.l4AssignedCoins = [null, null, null];
+      state.teamName = "";
+      state.anonymousId = "";
+      const teamInput = document.getElementById('input-team-name');
+      if (teamInput) teamInput.value = "";
+      const teamError = document.getElementById('team-name-error');
+      if (teamError) teamError.style.display = "none";
       
       updateStatusBarHTML();
       showScreen('screen-welcome');

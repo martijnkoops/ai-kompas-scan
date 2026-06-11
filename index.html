@@ -2014,12 +2014,12 @@
         <div class="submit-section">
           <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Scanresultaat Vastleggen</h3>
           <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Sla je resultaat op voor het teamrapport. Je naam wordt niet gevraagd of opgeslagen; de scan gebruikt alleen de teamnaam en een automatisch anoniem nummer.
+            Je resultaat wordt automatisch opgeslagen zodra dit rapport verschijnt. Je naam wordt niet gevraagd of opgeslagen; de scan gebruikt alleen de teamnaam en een automatisch anoniem nummer.
           </p>
           
           <div class="submit-form">
-            <button class="btn btn-primary" id="btn-submit-data" onclick="submitAssessment()">
-              Resultaten Opslaan
+            <button class="btn btn-primary" id="btn-submit-data" onclick="submitAssessment({ manual: true })">
+              Verzenden...
             </button>
           </div>
           
@@ -2151,7 +2151,10 @@
       l4AssignedCoins: [null, null, null],
       level1SelectedRisks: [], // Tracks currently checked risks in modal
       teamName: "",
-      anonymousId: ""
+      anonymousId: "",
+      scanSummary: null,
+      submitInProgress: false,
+      hasSubmitted: false
     };
 
     // LEVEL 1: SUBTLE CASES (No obvious tells, positive adapt scoring)
@@ -3305,6 +3308,109 @@
       return { signals, criteria };
     }
 
+    function buildScanSummary() {
+      const scores = state.scores;
+      const totalScore = scores.basisEthiek + scores.didactiekTechniek + scores.visieBeleid;
+      let correctZoneCount = 0;
+      let correctRiskCount = 0;
+      let exactRiskCaseCount = 0;
+      let falseRiskCount = 0;
+      let totalRiskCount = 0;
+      let correctAuditCount = 0;
+
+      state.choices.level1.forEach(choice => {
+        const currentCase = L1_CASES.find(c => c.id === choice.caseId);
+        if (!currentCase) return;
+
+        const selectedRisks = choice.risksChosen || [];
+        const selectedSet = new Set(selectedRisks);
+        const expectedRisks = currentCase.correctRisks || [];
+        const caseCorrectRisks = expectedRisks.filter(risk => selectedSet.has(risk)).length;
+        const caseFalseRisks = selectedRisks.filter(risk => !expectedRisks.includes(risk)).length;
+
+        if (choice.zoneChosen === currentCase.bestZone) correctZoneCount++;
+        correctRiskCount += caseCorrectRisks;
+        falseRiskCount += caseFalseRisks;
+        totalRiskCount += expectedRisks.length;
+
+        if (caseCorrectRisks === expectedRisks.length && caseFalseRisks === 0) {
+          exactRiskCaseCount++;
+        }
+      });
+
+      state.choices.level2.forEach(choice => {
+        const currentAudit = L2_TRAILS.find(a => a.id === choice.auditId);
+        if (currentAudit && choice.strategyChosen === currentAudit.correctStrategy) {
+          correctAuditCount++;
+        }
+      });
+
+      const l3Choices = state.choices.level3 || {};
+      const hasSafeTool = l3Choices.tool === "inst_ai" || l3Choices.tool === "translation_tool";
+      const hasStrongPrompt = l3Choices.prompt === "rubric_prompt" || l3Choices.prompt === "structured_prompt";
+      const hasHumanReview = l3Choices.didactiek === "critical_eval" || l3Choices.didactiek === "peer_review";
+      const workflowSignalCount = [hasSafeTool, hasStrongPrompt, hasHumanReview].filter(Boolean).length;
+
+      const selectedPolicies = new Set((state.choices.level4 || []).filter(Boolean));
+      const strongPolicyCount = ["curriculum", "guideline", "co_creation"]
+        .filter(policyId => selectedPolicies.has(policyId)).length;
+      const hasMandate = selectedPolicies.has("mandate");
+
+      const level2Ready =
+        totalScore >= 24 &&
+        correctZoneCount >= 3 &&
+        correctRiskCount >= 4 &&
+        correctAuditCount >= 3 &&
+        workflowSignalCount >= 2;
+
+      const level3Ready =
+        level2Ready &&
+        totalScore >= 42 &&
+        correctAuditCount >= 4 &&
+        workflowSignalCount === 3 &&
+        strongPolicyCount >= 2 &&
+        !hasMandate;
+
+      const assessedLevel = level3Ready ? 3 : level2Ready ? 2 : 1;
+
+      return {
+        assessedLevel,
+        totalScore,
+        correctZones: correctZoneCount,
+        totalZones: L1_CASES.length,
+        correctRisks: correctRiskCount,
+        totalRisks: totalRiskCount,
+        exactRiskCases: exactRiskCaseCount,
+        totalRiskCases: L1_CASES.length,
+        correctAudits: correctAuditCount,
+        totalAudits: L2_TRAILS.length,
+        workflowSignals: workflowSignalCount,
+        workflowSignalsTotal: 3,
+        strongPolicyChoices: strongPolicyCount,
+        hasMandate,
+        level2Ready,
+        level3Ready
+      };
+    }
+
+    function getLevelEvidenceText(summary) {
+      if (summary.assessedLevel === 3) {
+        return "Je liet voldoende basisbewijs, AI-regie, workflowkwaliteit en beleidsmatige borging zien voor een niveau 3-indicatie.";
+      }
+
+      if (summary.assessedLevel === 2) {
+        return "Je liet voldoende basisbewijs en AI-regie zien voor een niveau 2-indicatie. Niveau 3 vraagt daarnaast sterker bewijs voor begeleiding, borging en veilige organisatiekeuzes.";
+      }
+
+      const missing = [];
+      if (summary.correctZones < 3) missing.push("minstens 3 van de 4 compliance-inschattingen correct");
+      if (summary.correctRisks < 4) missing.push("meer relevante risico's herkennen");
+      if (summary.correctAudits < 3) missing.push("minstens 3 van de 5 AI-regie-audits correct");
+      if (summary.workflowSignals < 2) missing.push("een veiligere tool-, prompt- en reviewkeuze in de workflow");
+
+      return `De totaalscore alleen bepaalt het niveau niet meer. Voor niveau 2 is ook kernbewijs nodig: ${missing.join("; ") || "meer consistent bewijs in de kernopdrachten"}.`;
+    }
+
     function getDimensionSummaries(criteria) {
       return DIMENSIONS.map(dimension => {
         const dimensionCriteria = criteria.filter(criterion => criterion.dimension === dimension.key);
@@ -3559,6 +3665,8 @@
       const evidenceSignals = buildEvidenceSignals();
       const criterionEvaluation = buildCriterionEvaluation(evidenceSignals);
       const dimensionSummaries = getDimensionSummaries(criterionEvaluation.criteria);
+      const scanSummary = buildScanSummary();
+      state.scanSummary = scanSummary;
       
       const profileName = document.getElementById('final-profile-name');
       const profileText = document.getElementById('final-profile-feedback');
@@ -3573,10 +3681,8 @@
       if (scores.didactiekTechniek < scores[minScoreKey]) minScoreKey = 'didactiekTechniek';
       if (scores.visieBeleid < scores[minScoreKey]) minScoreKey = 'visieBeleid';
 
-      const totalScore = scores.basisEthiek + scores.didactiekTechniek + scores.visieBeleid;
-      const level =
-        totalScore >= 34 ? 3 :
-        totalScore >= 20 ? 2 : 1;
+      const totalScore = scanSummary.totalScore;
+      const level = scanSummary.assessedLevel;
 
       const levelAdvice = {
         1: {
@@ -3639,7 +3745,11 @@
       `;
 
       scopeNote.innerHTML = `
-        <strong>Bereik van deze scan:</strong> deze scan raakt niveau 1, niveau 2 en enkele strategische signalen van niveau 3, maar omvat niet alle criteria als harde toets. Het adviesniveau is daarom een ontwikkelindicatie. De criterialijst hieronder laat zien welke onderdelen in je antwoorden zichtbaar werden, deels zichtbaar waren, nog niet zichtbaar waren of niet expliciet zijn uitgevraagd.
+        <strong>Bereik van deze scan:</strong> deze scan raakt niveau 1, niveau 2 en enkele strategische signalen van niveau 3, maar omvat niet alle criteria als harde toets. Het adviesniveau is daarom een ontwikkelindicatie.
+        <br><br>
+        <strong>Niveaubepaling:</strong> ${getLevelEvidenceText(scanSummary)}
+        <br>
+        Kernbewijs: ${scanSummary.correctZones}/${scanSummary.totalZones} compliance-inschattingen correct, ${scanSummary.correctRisks}/${scanSummary.totalRisks} relevante risico's herkend, ${scanSummary.correctAudits}/${scanSummary.totalAudits} AI-regie-audits correct.
       `;
 
       renderEvidenceSummary(dimensionSummaries);
@@ -3705,20 +3815,43 @@
           }
         }
       });
+
+      submitAssessment({ automatic: true });
     }
 
     /* =========================================================================
        SUBMIT DATA TO GOOGLE SHEET
        ========================================================================= */
 
-    function submitAssessment() {
+    function submitAssessment(options = {}) {
       const statusMsg = document.getElementById('submit-status-msg');
       const submitBtn = document.getElementById('btn-submit-data');
+      const isAutomatic = Boolean(options.automatic);
+
+      if (state.hasSubmitted) {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-basis)";
+        statusMsg.textContent = "Je scanresultaten zijn al verzonden.";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Resultaat verzonden";
+        return;
+      }
+
+      if (state.submitInProgress) {
+        statusMsg.style.display = "block";
+        statusMsg.style.color = "var(--accent-didactiek)";
+        statusMsg.textContent = "Je scanresultaten worden verzonden...";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Verzenden...";
+        return;
+      }
       
       if (!state.teamName) {
         statusMsg.style.display = "block";
         statusMsg.style.color = "var(--accent-warning)";
-        statusMsg.textContent = "Teamnaam ontbreekt. Start de scan opnieuw en vul eerst een teamnaam in.";
+        statusMsg.textContent = "Teamnaam ontbreekt. Start de scan opnieuw en kies eerst een team.";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Opnieuw proberen";
         return;
       }
 
@@ -3730,11 +3863,21 @@
         statusMsg.style.display = "block";
         statusMsg.style.color = "var(--accent-warning)";
         statusMsg.innerHTML = "Koppeling mislukt: Er is nog geen Google Apps Script URL ingesteld in de code.<br><small style='color: var(--text-muted);'>Resultaat-data: " + JSON.stringify(state.scores) + "</small>";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Opnieuw proberen";
         return;
       }
       
+      const scanSummary = state.scanSummary || buildScanSummary();
+      state.scanSummary = scanSummary;
+      state.submitInProgress = true;
       submitBtn.disabled = true;
       submitBtn.textContent = "Verzenden...";
+      statusMsg.style.display = "block";
+      statusMsg.style.color = "var(--accent-didactiek)";
+      statusMsg.textContent = isAutomatic
+        ? "Je scanresultaten worden automatisch verzonden..."
+        : "Je scanresultaten worden verzonden...";
       
       const payload = {
         teamName: state.teamName,
@@ -3743,12 +3886,14 @@
         basisEthiek: state.scores.basisEthiek,
         didactiekTechniek: state.scores.didactiekTechniek,
         visieBeleid: state.scores.visieBeleid,
-        totalScore: state.scores.basisEthiek + state.scores.didactiekTechniek + state.scores.visieBeleid,
+        totalScore: scanSummary.totalScore,
+        assessedLevel: scanSummary.assessedLevel,
         levelDetails: JSON.stringify({
           level1: state.choices.level1,
           level2: state.choices.level2,
           level3: state.choices.level3,
-          level4: state.choices.level4
+          level4: state.choices.level4,
+          summary: scanSummary
         })
       };
       
@@ -3761,17 +3906,21 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
+        state.submitInProgress = false;
+        state.hasSubmitted = true;
         statusMsg.style.display = "block";
         statusMsg.style.color = "var(--accent-basis)";
         statusMsg.textContent = "Je scanresultaten zijn verzonden en verwerkt.";
-        submitBtn.textContent = "Resultaten Verzonden";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Resultaat verzonden";
       })
       .catch(err => {
+        state.submitInProgress = false;
         statusMsg.style.display = "block";
         statusMsg.style.color = "var(--accent-danger)";
-        statusMsg.innerHTML = "❌ Verzenden mislukt door een netwerkfout. Kopieer je scores handmatig:<br><code>" + JSON.stringify(state.scores) + "</code>";
+        statusMsg.innerHTML = "Verzenden mislukt door een netwerkfout. Probeer opnieuw of kopieer je scores handmatig:<br><code>" + JSON.stringify(state.scores) + "</code>";
         submitBtn.disabled = false;
-        submitBtn.textContent = "Opnieuw Proberen";
+        submitBtn.textContent = "Opnieuw proberen";
       });
     }
 
@@ -3784,12 +3933,25 @@
       state.l4AssignedCoins = [null, null, null];
       state.teamName = "";
       state.anonymousId = "";
+      state.scanSummary = null;
+      state.submitInProgress = false;
+      state.hasSubmitted = false;
       const teamSelect = document.getElementById('select-team-name');
       if (teamSelect) teamSelect.value = "";
       const confirmTeamButton = document.getElementById('btn-confirm-team');
       if (confirmTeamButton) confirmTeamButton.disabled = true;
       const teamError = document.getElementById('team-name-error');
       if (teamError) teamError.style.display = "none";
+      const submitButton = document.getElementById('btn-submit-data');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Verzenden...";
+      }
+      const submitStatus = document.getElementById('submit-status-msg');
+      if (submitStatus) {
+        submitStatus.style.display = "none";
+        submitStatus.textContent = "";
+      }
       closeTeamModal();
       
       updateStatusBarHTML();
